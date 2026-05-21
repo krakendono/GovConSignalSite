@@ -53,3 +53,36 @@ Current execution target is MVP Phase 1:
 - Pull opportunities
 - Opportunity dashboard
 - Basic filtering
+
+## Step 1 Progress: Supabase Foundation
+
+Supabase SDKs are installed and base clients are wired for browser and server contexts.
+
+Configuration files:
+
+- [.env.example](.env.example)
+- [lib/env.ts](lib/env.ts)
+- [lib/supabase/client.ts](lib/supabase/client.ts)
+- [lib/supabase/server.ts](lib/supabase/server.ts)
+
+To configure locally:
+
+1. Copy `.env.example` to `.env.local`
+2. Add your Supabase project URL and anon key
+3. Restart the dev server
+
+## Step 2 Progress: Auth Scaffold
+
+Supabase Auth scaffolding is in place:
+
+- [app/auth/login/page.tsx](app/auth/login/page.tsx)
+- [app/auth/login/actions.ts](app/auth/login/actions.ts)
+- [app/auth/callback/route.ts](app/auth/callback/route.ts)
+- [app/dashboard/page.tsx](app/dashboard/page.tsx)
+- [proxy.ts](proxy.ts)
+
+Routes ready to test:
+
+- /auth/login
+- /auth/callback
+- /dashboard

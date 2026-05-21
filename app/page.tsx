@@ -1,4 +1,9 @@
+import { isSupabaseConfigured } from '@/lib/env'
+import Link from 'next/link'
+
 export default function Home() {
+  const supabaseConfigured = isSupabaseConfigured()
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,#ffedd5,transparent_45%),linear-gradient(180deg,#f7f8f5,#eef2ef)]">
       <section className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-24">
@@ -25,6 +30,26 @@ export default function Home() {
             <p className="text-xs uppercase tracking-wider text-slate-500">Data source</p>
             <p className="mt-2 text-lg font-semibold text-ink">SAM.gov Opportunities API</p>
           </div>
+        </div>
+        <div className="mt-6 inline-flex w-fit items-center rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-700">
+          Supabase status:&nbsp;
+          <span className={supabaseConfigured ? 'font-semibold text-accent' : 'font-semibold text-signal'}>
+            {supabaseConfigured ? 'configured' : 'missing env values'}
+          </span>
+        </div>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/auth/login"
+            className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/dashboard"
+            className="rounded-lg border border-slate-300 bg-white/80 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-white"
+          >
+            Open dashboard
+          </Link>
         </div>
       </section>
     </main>
