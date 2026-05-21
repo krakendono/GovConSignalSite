@@ -4,14 +4,14 @@ Starter web app for surfacing federal contracting opportunities from the GSA pub
 
 https://open.gsa.gov/api/get-opportunities-public-api/
 
-This repository is prepared as the baseline for a master prompt driven build process.
+This repository is prepared as the baseline for a master-prompt driven build process.
 
 ## Stack
 
-- Vite
+- Next.js
 - React
 - TypeScript
-- ESLint
+- Tailwind CSS
 
 ## Local development
 
@@ -36,15 +36,20 @@ npm run build
 
 ## Current status
 
-- Project scaffolded and builds successfully.
-- Git repository initialized with first baseline commit.
-- VS Code task created at `.vscode/tasks.json`.
+- Next.js + Tailwind baseline is in place.
+- Root route is configured in the app router.
+- VS Code task created at `.vscode/tasks.json` as `dev: next`.
 
-## Next phase
+## Master Prompt Alignment
 
-Use your master prompt to drive implementation of:
+Development follows [Docs/Master Prompt Government Contracting.txt](Docs/Master%20Prompt%20Government%20Contracting.txt) as source of truth.
+Execution sequencing is tracked in [Docs/MVP_EXECUTION_PLAN.md](Docs/MVP_EXECUTION_PLAN.md).
 
-- API client for GSA opportunities endpoint
-- Criteria-based filtering and ranking
-- Results UI and opportunity details view
-- Error handling, loading states, and tests
+Current execution target is MVP Phase 1:
+
+- Auth
+- Company profiles
+- NAICS/PSC storage
+- Pull opportunities
+- Opportunity dashboard
+- Basic filtering

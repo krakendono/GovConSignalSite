@@ -1,0 +1,821 @@
+﻿PROJECT NAME:
+GovSignal AI
+
+
+PROJECT TYPE:
+AI-powered SaaS platform for federal contract discovery, monitoring, procurement intelligence, opportunity analysis, and proposal preparation.
+
+
+==================================================
+CORE MISSION
+==================================================
+
+
+Build a web-based platform that continuously monitors federal contract opportunities, intelligently matches them to businesses using AI, analyzes historical procurement behavior, and assists users in preparing proposal responses.
+
+
+==================================================
+IMPORTANT PRODUCT RULES
+==================================================
+
+
+- This is a WEBSITE, not desktop software.
+- Do not build downloadable applications.
+- Do not auto-submit government proposals without user approval.
+- Human review is required before any submission.
+- AI is an assistant, not a legal authority.
+- AI must never invent company qualifications or certifications.
+- AI must clearly label uncertainty and missing information.
+- AI must only use verified user/company data.
+
+
+==================================================
+POSITIONING
+==================================================
+
+
+Do NOT market this as:
+“AI automatically applies to contracts.”
+
+
+Market this as:
+“AI-powered federal contract intelligence and proposal preparation.”
+
+
+MVP TAGLINE:
+Find better federal contracts. Understand them faster. Draft proposals in minutes.
+
+
+==================================================
+CORE USER FLOW
+==================================================
+
+
+1. User creates account.
+2. User creates company profile.
+3. User uploads company capabilities and documents.
+4. User selects:
+   - NAICS codes
+   - PSC codes
+   - keywords
+   - agencies
+   - exclusions
+5. System continuously monitors SAM.gov.
+6. AI analyzes opportunities.
+7. AI scores opportunity fit.
+8. AI analyzes historical award data.
+9. AI alerts users to high-value matches.
+10. AI generates proposal drafts and compliance checklists.
+11. User reviews and exports proposal package.
+12. User manually submits or follows guided submission instructions.
+
+
+==================================================
+PRIMARY APIs
+==================================================
+
+
+Github API Source:
+https://github.com/gsa
+1. SAM.gov Get Opportunities API
+Purpose:
+Used for OPEN contract opportunities.
+
+
+2. SAM.gov Contract Awards API
+Purpose:
+Used for:
+- historical awards
+- spending intelligence
+- incumbent analysis
+- pricing benchmarks
+- rebid forecasting
+
+
+3. SAM.gov PSC API
+Purpose:
+Used for product/service code filtering.
+
+
+4. SAM.gov Entity Management API
+Optional:
+Business verification.
+
+
+DO NOT USE:
+Contract Awards API for open opportunities.
+
+
+==================================================
+TECH STACK
+==================================================
+
+
+FRONTEND:
+- Next.js
+- React
+- Tailwind CSS
+- shadcn/ui
+
+
+BACKEND:
+- FastAPI OR Next.js API routes
+
+
+DATABASE:
+- Supabase Postgres
+
+
+AUTH:
+- Supabase Auth OR Clerk
+
+
+STORAGE:
+- Supabase Storage OR AWS S3
+
+
+PAYMENTS:
+- Stripe
+
+
+AI:
+Primary:
+- Claude Sonnet
+
+
+Future Hybrid:
+- Gemma 4 self-hosted
+- Gemini for large PDFs
+- OpenAI embeddings
+
+
+BACKGROUND JOBS:
+- Trigger.dev
+- Inngest
+- Supabase Edge Functions
+
+
+SEARCH:
+- PostgreSQL Full Text Search
+- Vector search later
+
+
+DEPLOYMENT:
+Frontend:
+- Vercel
+
+
+Backend:
+- Railway
+- Render
+- Fly.io
+- AWS
+
+
+Database:
+- Supabase
+
+
+==================================================
+MAIN WEBSITE PAGES
+==================================================
+
+
+- /
+- /dashboard
+- /watchlists
+- /opportunities
+- /opportunities/[id]
+- /company-profile
+- /proposal-builder
+- /documents
+- /notifications
+- /billing
+- /settings
+- /admin
+
+
+==================================================
+DATABASE TABLES
+==================================================
+
+
+users
+companies
+company_profiles
+naics_codes
+psc_codes
+
+
+watchlists
+watchlist_keywords
+watchlist_psc
+watchlist_naics
+watchlist_exclusions
+watchlist_matches
+watchlist_notifications
+
+
+opportunities
+opportunity_documents
+opportunity_summaries
+match_scores
+
+
+historical_awards
+agency_spending
+pricing_benchmarks
+incumbent_contractors
+rebid_predictions
+
+
+proposal_projects
+proposal_sections
+proposal_exports
+
+
+subscriptions
+audit_logs
+
+
+==================================================
+COMPANY PROFILE FIELDS
+==================================================
+
+
+- Company name
+- Capability statement
+- NAICS codes
+- PSC codes
+- Certifications
+- Past performance
+- Team size
+- Geographic coverage
+- Preferred agencies
+- Keywords
+- Excluded industries
+- Uploaded documents
+
+
+==================================================
+WATCHLIST SYSTEM
+==================================================
+
+
+GOAL:
+Allow users to continuously monitor opportunities using:
+- keywords
+- semantic AI concepts
+- NAICS codes
+- PSC codes
+- agencies
+- set-asides
+- location preferences
+- budget ranges
+- exclusions
+
+
+WATCHLIST EXAMPLES:
+- AI automation
+- XR training
+- Unity development
+- Cybersecurity
+- Mobile app modernization
+- Simulation systems
+
+
+NEGATIVE FILTERS:
+- Construction
+- Janitorial
+- Staffing
+- On-site only
+- Clearance required
+
+
+WATCHLIST WORKFLOW:
+1. User creates watchlist.
+2. System stores preferences.
+3. Scheduled jobs run hourly or daily.
+4. System pulls newly posted opportunities.
+5. AI expands semantic keywords.
+6. AI scores opportunity relevance.
+7. Matches are saved.
+8. User receives notifications.
+
+
+==================================================
+SEMANTIC MATCHING
+==================================================
+
+
+The system must not rely only on exact keywords.
+
+
+Example:
+“virtual reality training”
+
+
+Should also match:
+- XR simulation
+- immersive environments
+- mixed reality systems
+- interactive training systems
+- simulation platforms
+
+
+==================================================
+AI RELEVANCE SCORE
+==================================================
+
+
+Score opportunities from 0-100 using:
+- NAICS match
+- PSC match
+- semantic similarity
+- keyword overlap
+- certifications
+- agency preference
+- location preference
+- budget fit
+- capability alignment
+- past performance similarity
+
+
+MATCH SCORE OUTPUT:
+- Score
+- Confidence level
+- Reasons to bid
+- Risks
+- Missing information
+- Bid/no-bid recommendation
+
+
+HIGH PRIORITY RULE:
+If score > 85:
+Mark as HIGH PRIORITY.
+
+
+==================================================
+NOTIFICATION TYPES
+==================================================
+
+
+- Dashboard alerts
+- Email alerts
+- Daily digests
+- High-priority instant alerts
+
+
+==================================================
+HISTORICAL AWARD & SPENDING INTELLIGENCE
+==================================================
+
+
+GOAL:
+Use historical federal award data to provide:
+- pricing intelligence
+- agency spending trends
+- incumbent analysis
+- rebid forecasting
+- procurement intelligence
+
+
+DATA SOURCE:
+SAM.gov Contract Awards API
+
+
+PURPOSE:
+Help users understand:
+- historical spending
+- likely contract values
+- incumbent contractors
+- recurring procurement behavior
+- agency buying patterns
+- estimated budget expectations
+
+
+==================================================
+HISTORICAL AWARD LOOKUP
+==================================================
+
+
+Show:
+- previous awards for similar opportunities
+- previous award amounts
+- award dates
+- award duration
+- incumbent contractor
+- agency issuing the award
+
+
+==================================================
+AGENCY SPENDING ANALYSIS
+==================================================
+
+
+Track:
+- total agency spend by NAICS
+- total agency spend by PSC
+- recurring procurement categories
+- annual spending trends
+- seasonal purchasing behavior
+
+
+==================================================
+PRICE BENCHMARKING
+==================================================
+
+
+Estimate:
+- average award size
+- typical contract range
+- historical pricing patterns
+- likely expected budget
+
+
+OUTPUT EXAMPLES:
+- “Average historical award: $420,000”
+- “Agency spent $8.2M on XR simulation over 3 years”
+- “Typical contracts range between $150K-$600K”
+
+
+==================================================
+INCUMBENT ANALYSIS
+==================================================
+
+
+Track:
+- recurring winners
+- incumbent contract holders
+- contractor dominance patterns
+- repeat agency relationships
+
+
+OUTPUT EXAMPLES:
+- “Incumbent contractor won 4 consecutive awards”
+- “Agency frequently awards to small businesses”
+- “Incumbent retention rate: 62%”
+
+
+==================================================
+REBID FORECASTING
+==================================================
+
+
+GOAL:
+Estimate likely rebid timing using historical awards.
+
+
+OUTPUT:
+- “Likely recompete expected within 45 days”
+- “Recurring annual procurement detected”
+
+
+IMPORTANT:
+Historical intelligence is a supporting signal, not a guaranteed predictor.
+
+
+==================================================
+AI SYSTEM RULES
+==================================================
+
+
+AI MUST:
+- Use only verified user/company data.
+- Return structured JSON.
+- Mark uncertainty clearly.
+- Cite opportunity sections used for reasoning.
+- Recommend human review.
+
+
+AI MUST NEVER:
+- Invent certifications
+- Invent pricing
+- Invent employees
+- Invent revenue
+- Invent past performance
+- Invent security clearances
+- Invent legal qualifications
+
+
+==================================================
+AI OUTPUT FORMAT
+==================================================
+
+
+Always return structured JSON.
+
+
+EXAMPLE:
+
+
+{
+  "summary": "",
+  "requirements": [],
+  "required_documents": [],
+  "risks": [],
+  "missing_information": [],
+  "match_score": 0,
+  "historical_spending_analysis": {},
+  "price_benchmark": {},
+  "recommendation": ""
+}
+
+
+==================================================
+AI PROMPT FOR OPPORTUNITY ANALYSIS
+==================================================
+
+
+You are analyzing a federal contract opportunity for a business.
+
+
+Use only:
+- opportunity data
+- uploaded documents
+- verified company profile data
+- historical award data
+
+
+Do not invent information.
+
+
+If information is missing:
+Return:
+“MISSING INFORMATION”
+
+
+Analyze:
+1. Opportunity summary
+2. Key requirements
+3. Submission deadline
+4. Required documents
+5. Certification requirements
+6. Risks
+7. Missing information
+8. Match score
+9. Historical spending analysis
+10. Price benchmarking
+11. Incumbent analysis
+12. Bid/no-bid recommendation
+
+
+==================================================
+AI PROMPT FOR PROPOSAL GENERATION
+==================================================
+
+
+You are generating a proposal draft for a federal contract opportunity.
+
+
+Use only:
+- company profile
+- uploaded company documents
+- opportunity documents
+- verified user information
+
+
+Do not invent:
+- certifications
+- pricing
+- employees
+- contracts
+- capabilities
+- legal claims
+
+
+If information is missing:
+Insert:
+[USER MUST PROVIDE THIS INFORMATION]
+
+
+Generate:
+1. Cover letter
+2. Executive summary
+3. Technical approach
+4. Management approach
+5. Relevant experience
+6. Compliance matrix
+7. Required attachments checklist
+8. Submission instructions
+
+
+==================================================
+SECURITY RULES
+==================================================
+
+
+- Store API keys only on backend.
+- Never expose AI keys to frontend.
+- Never expose SAM.gov keys to frontend.
+- Use Row Level Security.
+- Users can only access their own company data.
+- Log proposal generation.
+- Log exports.
+- Log opportunity decisions.
+- Add audit trails.
+
+
+==================================================
+MVP PHASE 1
+==================================================
+
+
+- Auth
+- Company profiles
+- NAICS/PSC storage
+- Pull opportunities
+- Opportunity dashboard
+- Basic filtering
+
+
+==================================================
+MVP PHASE 2
+==================================================
+
+
+- Watchlists
+- Semantic search
+- AI summaries
+- Match scoring
+- Notifications
+
+
+==================================================
+MVP PHASE 3
+==================================================
+
+
+- Historical award intelligence
+- Price benchmarking
+- Incumbent analysis
+- Rebid forecasting
+
+
+==================================================
+MVP PHASE 4
+==================================================
+
+
+- Proposal generator
+- Compliance checklists
+- DOCX/PDF export
+- Saved proposal projects
+
+
+==================================================
+MVP PHASE 5
+==================================================
+
+
+- Stripe billing
+- Team accounts
+- Admin dashboard
+- Advanced analytics
+
+
+==================================================
+BUILD ORDER
+==================================================
+
+
+1. Create Next.js app
+2. Add Tailwind
+3. Add Supabase
+4. Add auth
+5. Create database schema
+6. Build company profile system
+7. Build watchlists
+8. Connect SAM.gov API
+9. Store opportunities
+10. Build dashboard
+11. Add AI summaries
+12. Add match scoring
+13. Add notifications
+14. Add historical intelligence
+15. Add proposal generation
+16. Add exports
+17. Add Stripe
+18. Add admin dashboard
+
+
+==================================================
+PRICING MODEL
+==================================================
+
+
+STARTER:
+$49/month
+- 1 company
+- limited watchlists
+- opportunity alerts
+- basic AI summaries
+
+
+PRO:
+$149/month
+- proposal generation
+- compliance checklists
+- advanced alerts
+- historical intelligence
+- saved projects
+
+
+AGENCY:
+$499/month
+- multi-company management
+- team accounts
+- rebid intelligence
+- advanced analytics
+
+
+==================================================
+IMPORTANT DEVELOPMENT RULES
+==================================================
+
+
+Always build the smallest working version first.
+
+
+Never attempt full autonomous proposal submission in MVP.
+
+
+Never redesign the architecture mid-build.
+
+
+When uncertain:
+Return to the current MVP phase.
+
+
+Always prioritize:
+1. Reliability
+2. Accuracy
+3. Structured outputs
+4. Human review
+5. Secure backend architecture
+
+
+==================================================
+FALLBACK RULES FOR AI HALLUCINATIONS
+==================================================
+
+
+If AI invents APIs:
+Return to official SAM.gov documentation.
+
+
+If AI confuses awards with opportunities:
+Correct immediately.
+
+
+If AI skips database schema:
+Force schema creation before coding.
+
+
+If AI produces vague code:
+Request file-by-file implementation.
+
+
+If AI attempts to build everything simultaneously:
+Return to current MVP phase only.
+
+
+If AI invents company qualifications:
+Replace with:
+“MISSING USER DATA”
+
+
+If AI suggests scraping before official APIs:
+Use official APIs first.
+
+
+If AI writes freeform automation logic:
+Convert outputs to structured JSON.
+
+
+==================================================
+FINAL PLATFORM PHILOSOPHY
+==================================================
+
+
+This platform is NOT:
+- a generic chatbot
+- a basic contract search engine
+- a fully autonomous AI bidder
+
+
+This platform IS:
+- an AI-assisted procurement intelligence system
+- a persistent opportunity monitoring platform
+- a workflow automation platform
+- a proposal preparation platform
+- a government contracting operations workspace
+
+
+Always optimize for:
+- discoverability
+- workflow automation
+- proposal speed
+- procurement intelligence
+- recurring SaaS retention
+- operational simplicity

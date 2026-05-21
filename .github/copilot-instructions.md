@@ -5,10 +5,10 @@
   Summary: Project type confirmed as a website using the GSA opportunities API with a master prompt guiding future development.
 
 - [x] Scaffold the Project
-  Summary: Vite React TypeScript project scaffolded in the repository root.
+  Summary: Project migrated to Next.js + React + TypeScript in the repository root.
 
 - [x] Customize the Project
-  Summary: README updated with GovConSignalSite purpose, setup, and next implementation phase.
+  Summary: README and execution plan updated for master-prompt-driven phased delivery.
 
 - [x] Install Required Extensions
   Summary: No required extension list was provided, so no extension installation was needed.
@@ -17,7 +17,7 @@
   Summary: Dependencies installed and production build completed successfully.
 
 - [x] Create and Run Task
-  Summary: Created a VS Code task named dev: vite in .vscode/tasks.json.
+  Summary: Created a VS Code task named dev: next in .vscode/tasks.json.
 
 - [ ] Launch the Project
   Summary: Deferred until you confirm you want me to launch in debug mode.
