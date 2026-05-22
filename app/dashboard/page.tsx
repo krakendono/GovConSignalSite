@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/env'
 import { signOut } from '@/app/auth/login/actions'
@@ -29,9 +30,17 @@ export default async function DashboardPage() {
         <div className="mt-8 rounded-2xl border border-slate-200 bg-white/85 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">Phase 1 Progress</h2>
           <p className="mt-2 text-sm text-slate-700">
-            Auth foundation is active. Next we will add company profile tables and forms.
+            Auth is active and company profile intake is now available.
           </p>
-          <form action={signOut} className="mt-6">
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/company-profile"
+              className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              Open company profile
+            </Link>
+          </div>
+          <form action={signOut} className="mt-4">
             <button
               type="submit"
               className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"

@@ -86,3 +86,28 @@ Routes ready to test:
 - /auth/login
 - /auth/callback
 - /dashboard
+
+## Step 3 Progress: Database Schema
+
+Supabase migration created for Phase 1 tables and Row Level Security:
+
+- [supabase/migrations/20260521_000001_phase1_schema.sql](supabase/migrations/20260521_000001_phase1_schema.sql)
+
+Core tables added:
+
+- users
+- companies
+- company_profiles
+- naics_codes
+- psc_codes
+- company_naics_codes
+- company_psc_codes
+
+## Step 4 Progress: Company Profile System
+
+Company profile intake UI and save flow are now implemented:
+
+- [app/company-profile/page.tsx](app/company-profile/page.tsx)
+- [app/company-profile/actions.ts](app/company-profile/actions.ts)
+
+Dashboard now links into the company profile workflow.

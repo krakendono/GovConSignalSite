@@ -46,3 +46,10 @@ Phase 1: Foundation
 ## Decision Policy
 
 When uncertain or scope expands unexpectedly, return to the current MVP phase and ship the smallest working increment.
+
+## Delivered So Far
+
+- Step 3: Supabase foundation with server/client helpers and env scaffolding.
+- Step 4: Auth scaffold (magic-link login, callback, protected dashboard).
+- Step 5: Database schema migration for users, companies, company_profiles, NAICS/PSC tables, and RLS policies.
+- Step 6 (started): Company profile intake page with save action and NAICS/PSC mapping persistence.
