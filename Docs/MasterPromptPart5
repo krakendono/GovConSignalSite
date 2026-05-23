@@ -1,0 +1,415 @@
+==================================================
+POST-MVP EXPANSION LAYER
+COMPETITIVE INTELLIGENCE & WIN PROBABILITY ENGINE
+==================================================
+
+PURPOSE:
+The platform must evolve beyond:
+- contract discovery
+- opportunity qualification
+- execution planning
+
+The platform should analyze:
+- who actually wins contracts
+- why they win
+- what patterns exist
+- what pricing ranges succeed
+- what maturity level is required
+- what competition exists
+- whether the user can realistically compete
+
+==================================================
+CORE PHILOSOPHY
+==================================================
+
+Contracts tell users:
+“What opportunities exist?”
+
+Award history tells users:
+“What ACTUALLY wins.”
+
+The platform should prioritize:
+real procurement intelligence
+over
+simple opportunity visibility.
+
+==================================================
+PRIMARY DATA SOURCES
+==================================================
+
+The platform should integrate with:
+- SAM.gov Contract Awards API
+- GSA Contract Awards API
+- FPDS data
+- USAspending
+- Subaward reporting systems
+- SAM Opportunities API
+- Historical solicitation archives
+
+==================================================
+IMPORTANT API SOURCES
+==================================================
+
+PRIMARY SOURCES:
+- SAM.gov Contract Awards API
+- FPDS Contract Data
+- Opportunities API
+- Subaward Reporting API
+
+REFERENCE:
+https://open.gsa.gov/api/contract-awards/
+https://open.gsa.gov/api/get-opportunities-public-api/
+
+==================================================
+AUTOMATED PROCUREMENT INTELLIGENCE PIPELINE
+==================================================
+
+WORKFLOW:
+
+1. Pull new opportunities
+2. Parse opportunity requirements
+3. Run qualification analysis
+4. Run execution analysis
+5. Run market intelligence analysis
+6. Analyze historical awards
+7. Analyze incumbents
+8. Analyze pricing patterns
+9. Analyze competition density
+10. Generate win probability model
+11. Generate recommended strategy
+
+==================================================
+HISTORICAL AWARD ANALYSIS ENGINE
+==================================================
+
+PURPOSE:
+Analyze prior awards in similar:
+- NAICS
+- PSC/FSC
+- agencies
+- locations
+- contract categories
+- solicitation types
+
+The system should identify:
+- historical winners
+- repeat winners
+- incumbent patterns
+- award frequencies
+- market accessibility
+
+==================================================
+WINNER PROFILE ENGINE
+==================================================
+
+The system should identify:
+- what type of companies win
+- maturity level of winners
+- operational scale of winners
+- common certifications
+- supplier relationships
+- contract vehicles
+- regional dominance
+
+EXAMPLES:
+- Defense Prime
+- Federal VAR
+- Staffing Integrator
+- Technical Boutique
+- Commodity Supplier
+- Research Contractor
+- Regional Fulfillment Vendor
+
+==================================================
+COMPETITION DENSITY ENGINE
+==================================================
+
+PURPOSE:
+Determine how crowded or accessible a market is.
+
+ANALYZE:
+- average bidder counts
+- historical number of offers
+- repeat incumbents
+- sole-source patterns
+- procurement accessibility
+
+EXAMPLES:
+- 1 bidder = underserved market
+- 40 bidders = saturated commodity market
+
+==================================================
+INCUMBENT ANALYSIS ENGINE
+==================================================
+
+PURPOSE:
+Identify incumbent lock-in risk.
+
+ANALYZE:
+- repeat award patterns
+- agency loyalty patterns
+- recompete cycles
+- incumbent contract duration
+- incumbent frequency
+
+OUTPUT:
+Incumbent Advantage Score
+
+==================================================
+PRICING INTELLIGENCE ENGINE
+==================================================
+
+PURPOSE:
+Analyze historical pricing behavior.
+
+ANALYZE:
+- average award values
+- pricing ranges
+- award spread
+- LPTA vs best-value awards
+- margin patterns
+- pricing competitiveness
+
+OUTPUT:
+Pricing Benchmark Analysis
+
+==================================================
+EXAMPLE PRICING OUTPUT
+==================================================
+
+{
+  "average_award_value": "$180,000",
+  "estimated_winning_range": "$160,000-$195,000",
+  "pricing_model": "LPTA",
+  "pricing_pressure": "High",
+  "recommended_margin_range": "8%-14%"
+}
+
+==================================================
+WIN PROBABILITY ENGINE
+==================================================
+
+PURPOSE:
+Estimate realistic probability of success.
+
+FACTORS:
+- company maturity
+- past performance
+- incumbent strength
+- pricing competitiveness
+- competition density
+- operational fit
+- certifications
+- historical winner profiles
+
+OUTPUT:
+Win Probability Estimate
+
+==================================================
+EXAMPLE OUTPUT
+==================================================
+
+{
+  "estimated_win_probability": "Low",
+  "primary_reasons": [
+    "Strong incumbent presence",
+    "Mandatory past performance gap",
+    "Large operational maturity mismatch"
+  ],
+  "recommended_strategy": "Subcontractor"
+}
+
+==================================================
+LOSS ANALYSIS ENGINE
+==================================================
+
+PURPOSE:
+Help users understand why bids failed.
+
+POSSIBLE REASONS:
+- price too high
+- weak past performance
+- incumbent advantage
+- missing certifications
+- poor proposal fit
+- insufficient operational maturity
+- weak teaming strategy
+- unrealistic execution plan
+
+==================================================
+EXAMPLE LOSS ANALYSIS
+==================================================
+
+{
+  "loss_reasons": [
+    "Bid price 22% above historical average",
+    "Incumbent held prior 3 awards",
+    "Missing federal past performance"
+  ],
+  "recommended_improvements": [
+    "Pursue subcontract role first",
+    "Build agency-specific history",
+    "Improve supplier pricing"
+  ]
+}
+
+==================================================
+MARKET ACCESSIBILITY ENGINE
+==================================================
+
+PURPOSE:
+Determine whether a procurement ecosystem is:
+- approachable
+- saturated
+- incumbent-locked
+- underserved
+
+OUTPUT TYPES:
+- Beginner Friendly
+- Competitive
+- Incumbent Dominated
+- Specialized Niche
+- Enterprise Only
+- Defense Prime Territory
+
+==================================================
+RECOMPETE PREDICTION ENGINE
+==================================================
+
+PURPOSE:
+Predict likely future recompetes.
+
+ANALYZE:
+- recurring award cycles
+- incumbent expiration
+- agency purchasing frequency
+- average recompete intervals
+
+EXAMPLE:
+“This agency recompetes similar contracts every 12 months.”
+
+==================================================
+MARKET TREND ENGINE
+==================================================
+
+The platform should identify:
+- growing NAICS categories
+- expanding agencies
+- emerging procurement trends
+- increasing AI demand
+- growing simulation demand
+- shrinking procurement categories
+
+==================================================
+CONTRACTOR ARCHETYPE MATCHING
+==================================================
+
+The platform should compare:
+- user/company archetype
+against
+- historical winner archetypes
+
+EXAMPLES:
+- XR Specialist
+- AI Consultancy
+- Federal VAR
+- Commodity Supplier
+- Staffing Agency
+- Defense Prime
+
+==================================================
+IMPORTANT SYSTEM RULE
+==================================================
+
+The platform should aggressively suppress:
+- contracts dominated by mature incumbents
+- contracts requiring unrealistic operational scale
+- contracts with extremely low realistic win probability
+
+unless explicitly requested by the user.
+
+==================================================
+COMPETITIVE STRATEGY ENGINE
+==================================================
+
+The platform should recommend:
+- prime pursuit
+- subcontract pursuit
+- teaming strategy
+- supplier strategy
+- avoidance strategy
+
+==================================================
+EXAMPLE STRATEGIC OUTPUT
+==================================================
+
+{
+  "recommended_strategy": "Subcontractor",
+  "market_type": "Defense Prime Dominated",
+  "recommended_actions": [
+    "Identify incumbent subcontract opportunities",
+    "Target adjacent lower-value contracts",
+    "Build agency-specific past performance"
+  ]
+}
+
+==================================================
+FEDERAL MARKET MEMORY
+==================================================
+
+The platform should continuously learn from:
+- historical awards
+- bidder patterns
+- user outcomes
+- win/loss history
+- pricing history
+- competitor behavior
+
+The system should improve over time through:
+“procurement intelligence memory”
+
+==================================================
+IMPORTANT PRODUCT DIFFERENTIATOR
+==================================================
+
+Most procurement platforms answer:
+“What contracts exist?”
+
+GovSignal AI should answer:
+- Who usually wins?
+- Why do they win?
+- Can you realistically compete?
+- What strategy should you use?
+- What pricing range is realistic?
+- What maturity level is required?
+
+==================================================
+PLATFORM GOAL
+==================================================
+
+The platform should:
+- reduce blind bidding
+- reduce wasted proposal effort
+- improve strategic targeting
+- improve pricing intelligence
+- improve competitive awareness
+- improve realistic decision-making
+
+==================================================
+FINAL PLATFORM PHILOSOPHY
+==================================================
+
+The platform is NOT intended to:
+- flood users with contracts
+- encourage indiscriminate bidding
+- ignore market realities
+
+The platform IS intended to:
+- understand procurement ecosystems
+- analyze historical outcomes
+- identify realistic opportunities
+- improve strategic positioning
+- maximize realistic win probability
+
+The platform should function as:
+“AI-assisted federal procurement market intelligence”

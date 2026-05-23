@@ -39,6 +39,7 @@ npm run build
 - Next.js + Tailwind baseline is in place.
 - Root route is configured in the app router.
 - VS Code task created at `.vscode/tasks.json` as `dev: next`.
+- Watchlists are now implemented at `/watchlists`.
 
 ## Master Prompt Alignment
 
@@ -50,6 +51,7 @@ Current execution target is MVP Phase 1:
 - Auth
 - Company profiles
 - NAICS/PSC storage
+- Watchlists
 - Pull opportunities
 - Opportunity dashboard
 - Basic filtering
@@ -111,3 +113,13 @@ Company profile intake UI and save flow are now implemented:
 - [app/company-profile/actions.ts](app/company-profile/actions.ts)
 
 Dashboard now links into the company profile workflow.
+
+## Step 5 Progress: Watchlists
+
+Watchlist creation and storage are now implemented:
+
+- [app/watchlists/page.tsx](app/watchlists/page.tsx)
+- [app/watchlists/actions.ts](app/watchlists/actions.ts)
+- [supabase/migrations/20260523_000002_watchlists.sql](supabase/migrations/20260523_000002_watchlists.sql)
+
+Dashboard now links into the watchlists workflow.

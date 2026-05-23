@@ -53,3 +53,10 @@ When uncertain or scope expands unexpectedly, return to the current MVP phase an
 - Step 4: Auth scaffold (magic-link login, callback, protected dashboard).
 - Step 5: Database schema migration for users, companies, company_profiles, NAICS/PSC tables, and RLS policies.
 - Step 6 (started): Company profile intake page with save action and NAICS/PSC mapping persistence.
+- Step 7 (delivered): Watchlists tables, watchlist creation page, and delete flow.
+
+## Next Build Slice
+
+- Opportunities ingestion from SAM.gov.
+- Opportunity storage.
+- Basic filtering against watchlists and company profile data.

@@ -30,7 +30,7 @@ export default async function DashboardPage() {
         <div className="mt-8 rounded-2xl border border-slate-200 bg-white/85 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-ink">Phase 1 Progress</h2>
           <p className="mt-2 text-sm text-slate-700">
-            Auth is active and company profile intake is now available.
+            Auth is active, company profile intake is available, and watchlists are ready for setup.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -38,6 +38,12 @@ export default async function DashboardPage() {
               className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
             >
               Open company profile
+            </Link>
+            <Link
+              href="/watchlists"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+            >
+              Open watchlists
             </Link>
           </div>
           <form action={signOut} className="mt-4">
