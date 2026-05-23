@@ -1,0 +1,342 @@
+==================================================
+POST-MVP EXPANSION LAYER
+EXECUTION ORCHESTRATION ENGINE
+==================================================
+
+PURPOSE:
+The platform should evolve beyond:
+- contract discovery
+- qualification analysis
+- proposal drafting
+
+The platform should help users understand:
+“How can this opportunity realistically be executed?”
+
+==================================================
+CORE PHILOSOPHY
+==================================================
+
+The platform should NOT:
+- automatically execute contracts
+- automatically hire vendors
+- automatically sign agreements
+- automatically submit proposals
+- automatically commit pricing
+
+The platform SHOULD:
+- assist execution planning
+- identify capability gaps
+- identify subcontracting needs
+- identify supplier needs
+- identify staffing needs
+- help users organize execution strategy
+
+Human approval is ALWAYS required.
+
+==================================================
+CORE EXECUTION WORKFLOW
+==================================================
+
+1. Detect opportunity
+2. Analyze opportunity
+3. Determine opportunity category
+4. Determine execution model
+5. Compare against user capabilities
+6. Detect missing capabilities
+7. Search for subcontractors/vendors/suppliers
+8. Generate execution recommendations
+9. Generate outreach/contact lists
+10. User performs follow-up
+11. User gathers quotes/pricing
+12. User finalizes proposal
+
+==================================================
+OPPORTUNITY CLASSIFICATION ENGINE
+==================================================
+
+The system should classify every contract opportunity into operational categories.
+
+EXAMPLES:
+- Technical Specialist
+- Commodity Procurement
+- Staffing
+- Logistics
+- Construction
+- Research & Prototype
+- Professional Services
+- Manufacturing
+- Training Systems
+- IT Services
+- Engineering Services
+- AI/Automation
+- Visualization/Simulation
+
+==================================================
+IMPORTANT SYSTEM RULE
+==================================================
+
+Each opportunity category should trigger DIFFERENT:
+- qualification logic
+- pricing logic
+- execution analysis
+- risk analysis
+- supplier analysis
+- subcontractor analysis
+- proposal recommendations
+
+The platform must NOT treat all opportunities the same.
+
+==================================================
+CAPABILITY GAP ENGINE
+==================================================
+
+PURPOSE:
+Determine what capabilities the user/company is missing in order to execute the opportunity.
+
+WORKFLOW:
+1. Parse contract requirements
+2. Compare against user profile
+3. Detect missing capabilities
+4. Determine whether:
+   - subcontractor required
+   - supplier required
+   - staffing required
+   - teaming required
+
+OUTPUT:
+Capability Gap Report
+
+==================================================
+CAPABILITY GAP EXAMPLES
+==================================================
+
+EXAMPLES:
+- Missing logistics capability
+- Missing cloud infrastructure capability
+- Missing cybersecurity certification
+- Missing overseas support capability
+- Missing tanker simulator experience
+- Missing manufacturing capability
+
+==================================================
+SUBCONTRACTOR DISCOVERY ENGINE
+==================================================
+
+PURPOSE:
+Identify possible subcontractors that could help fulfill opportunity requirements.
+
+EXAMPLES:
+- XR specialists
+- logistics providers
+- cloud providers
+- cybersecurity firms
+- staffing companies
+- manufacturing shops
+- construction subcontractors
+
+IMPORTANT:
+The platform only recommends possible vendors/subcontractors.
+
+The user is responsible for:
+- outreach
+- pricing negotiation
+- legal agreements
+- final selection
+
+==================================================
+SUPPLIER DISCOVERY ENGINE
+==================================================
+
+PURPOSE:
+Help users identify suppliers required for commodity or procurement-based opportunities.
+
+EXAMPLES:
+- lumber suppliers
+- hardware distributors
+- commercial equipment vendors
+- industrial suppliers
+- material providers
+
+WORKFLOW:
+1. Analyze material requirements
+2. Search regionally for suppliers
+3. Rank supplier relevance
+4. Generate supplier contact list
+
+==================================================
+STAFFING & TEAMING ANALYSIS
+==================================================
+
+PURPOSE:
+Determine whether:
+- staffing partnerships
+- teaming arrangements
+- operational partners
+
+may be required.
+
+EXAMPLES:
+- overseas operational support
+- large staffing requirements
+- federal contract vehicle participation
+- specialized certifications
+
+==================================================
+EXECUTION MODEL ENGINE
+==================================================
+
+The system should determine:
+“How should this opportunity realistically be pursued?”
+
+POSSIBLE OUTPUTS:
+- Prime Contractor
+- Subcontractor
+- Supplier Fulfillment
+- Teaming Opportunity
+- Staffing Partnership
+- Avoid Opportunity
+
+==================================================
+EXAMPLE EXECUTION OUTPUT
+==================================================
+
+{
+  "contract_type": "Commodity Procurement",
+  "execution_model": "Supplier Fulfillment",
+  "recommended_strategy": "Procurement Arbitrage",
+  "required_capabilities": [
+    "Material sourcing",
+    "Delivery logistics"
+  ],
+  "missing_capabilities": [
+    "Regional supplier relationships"
+  ],
+  "recommended_suppliers": [
+    {
+      "name": "Regional Lumber Supplier",
+      "estimated_fit": "High"
+    }
+  ],
+  "estimated_margin_range": "10%-25%",
+  "risk_level": "Low",
+  "proposal_effort": "Low"
+}
+
+==================================================
+SUBCONTRACTOR OUTPUT EXAMPLE
+==================================================
+
+{
+  "recommended_strategy": "Subcontractor",
+  "prime_bid_recommended": false,
+  "possible_fit_areas": [
+    "XR visualization",
+    "Simulation systems",
+    "Interactive tooling"
+  ],
+  "recommended_partner_types": [
+    "Defense simulation company",
+    "Aerospace contractor"
+  ]
+}
+
+==================================================
+SUPPLIER SEARCH LOGIC
+==================================================
+
+The platform should eventually support:
+- regional supplier search
+- business directory aggregation
+- capability matching
+- supplier ranking
+- subcontractor recommendations
+
+DATA SOURCES MAY INCLUDE:
+- public business directories
+- SAM vendor databases
+- commercial supplier listings
+- contractor databases
+- search engines
+
+==================================================
+IMPORTANT SAFETY RULES
+==================================================
+
+The platform must NEVER:
+- auto-hire vendors
+- auto-negotiate pricing
+- auto-sign agreements
+- auto-submit bids
+- fabricate supplier capabilities
+- fabricate subcontractor availability
+- fabricate pricing estimates
+
+The platform only provides:
+- recommendations
+- execution guidance
+- discovery assistance
+- operational intelligence
+
+==================================================
+PROPOSAL ASSISTANCE WORKFLOW
+==================================================
+
+The system should eventually help users:
+- organize vendor quotes
+- organize subcontractor data
+- build execution plans
+- estimate fulfillment structure
+- identify operational dependencies
+
+==================================================
+EXECUTION INTELLIGENCE ENGINE
+==================================================
+
+The system should answer:
+- Can this be executed?
+- What capabilities are missing?
+- Who might help fulfill this?
+- What suppliers are required?
+- What staffing is required?
+- What operational risks exist?
+- What execution model makes sense?
+
+==================================================
+IMPORTANT PRODUCT DIFFERENTIATOR
+==================================================
+
+Most procurement tools stop at:
+“Here is the contract.”
+
+GovSignal AI should continue into:
+“Here is how this opportunity could realistically be executed.”
+
+==================================================
+PLATFORM GOAL
+==================================================
+
+The platform should function as:
+- procurement intelligence platform
+- execution planning assistant
+- subcontractor discovery engine
+- supplier discovery assistant
+- operational qualification system
+
+==================================================
+FINAL PLATFORM PHILOSOPHY
+==================================================
+
+The platform is NOT intended to:
+- replace human judgment
+- fully automate procurement
+- autonomously run contracts
+
+The platform IS intended to:
+- reduce execution uncertainty
+- accelerate operational planning
+- identify capability gaps
+- improve contractor decision-making
+- help users organize realistic fulfillment strategies
+
+The platform should operate as:
+“AI-assisted procurement execution intelligence”

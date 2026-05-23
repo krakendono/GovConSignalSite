@@ -1,0 +1,365 @@
+==================================================
+POST-MVP OPTIMIZATION LAYER
+CONTRACT QUALIFICATION INTELLIGENCE ENGINE
+==================================================
+
+PURPOSE:
+The platform must evolve beyond simple contract discovery.
+
+The goal is NOT to maximize:
+- number of opportunities shown
+- number of bids submitted
+
+The goal IS to maximize:
+- strategic fit
+- operational alignment
+- proposal efficiency
+- realistic execution capability
+- win probability
+
+==================================================
+CORE PHILOSOPHY
+==================================================
+
+Most procurement platforms operate like:
+“large searchable databases”
+
+GovSignal AI should operate like:
+“AI-assisted contract qualification intelligence”
+
+The system should behave like:
+- experienced capture manager
+- technical consultant
+- procurement analyst
+- operational strategist
+
+combined into one workflow.
+
+==================================================
+IMPORTANT SYSTEM RULE
+==================================================
+
+DEFAULT PLATFORM BEHAVIOR:
+
+DO NOT show low-fit opportunities by default.
+
+The system should aggressively filter opportunities that:
+- exceed operational maturity
+- require unsupported certifications
+- require missing past performance
+- require unavailable staffing scale
+- create unrealistic delivery risk
+- do not align with company capabilities
+
+==================================================
+PRIMARY OBJECTIVE
+==================================================
+
+The system should optimize for:
+WIN PROBABILITY
+
+NOT:
+CONTRACT VOLUME
+
+==================================================
+CORE QUALIFICATION ENGINE
+==================================================
+
+Every opportunity should pass through multiple qualification layers before being shown to the user.
+
+==================================================
+1. TECHNICAL FIT ANALYSIS
+==================================================
+
+QUESTION:
+Can the company technically execute this work?
+
+ANALYZE:
+- technical stack
+- domain expertise
+- tooling overlap
+- capability alignment
+- software requirements
+- hardware requirements
+- engineering specialization
+
+EXAMPLES:
+- Unity
+- XR
+- OpenXR
+- AI automation
+- simulation systems
+- analytics
+- visualization
+- logistics
+- cybersecurity
+- cloud systems
+
+OUTPUT:
+Technical Fit Score
+0-100
+
+==================================================
+2. PROCUREMENT FIT ANALYSIS
+==================================================
+
+QUESTION:
+Can the company realistically qualify operationally?
+
+ANALYZE:
+- required certifications
+- required past performance
+- required contract history
+- staffing scale
+- overseas support
+- security clearances
+- set-aside requirements
+- contract vehicles
+- compliance requirements
+
+EXAMPLES:
+- Tanker simulator past performance
+- Overseas operational support
+- Secret clearance requirements
+- Existing IDIQ participation
+
+OUTPUT:
+Procurement Fit Score
+0-100
+
+==================================================
+3. EXECUTION RISK ANALYSIS
+==================================================
+
+QUESTION:
+Can the company realistically deliver successfully?
+
+ANALYZE:
+- timeline feasibility
+- staffing complexity
+- hardware dependencies
+- operational burden
+- maintenance obligations
+- travel requirements
+- delivery schedule
+- support expectations
+
+OUTPUT:
+Execution Risk Level:
+- Low
+- Medium
+- High
+- Extreme
+
+==================================================
+4. COMPETITION RISK ANALYSIS
+==================================================
+
+QUESTION:
+Is this realistically winnable?
+
+ANALYZE:
+- incumbent dominance
+- likely competitors
+- defense-prime territory
+- commodity pricing pressure
+- required federal history
+- contract maturity level
+
+OUTPUT:
+Competition Risk Score
+0-100
+
+==================================================
+5. STRATEGIC VALUE ANALYSIS
+==================================================
+
+QUESTION:
+Does this opportunity strategically benefit the company long-term?
+
+ANALYZE:
+- past performance value
+- portfolio value
+- niche alignment
+- relationship-building potential
+- recurring opportunity potential
+- future recompete value
+
+OUTPUT:
+Strategic Value Score
+0-100
+
+==================================================
+FINAL AI QUALIFICATION OUTPUT
+==================================================
+
+The platform should return structured opportunity intelligence.
+
+EXAMPLE:
+
+{
+  "fit_score": 91,
+  "technical_fit": 94,
+  "procurement_fit": 88,
+  "execution_risk": "Medium",
+  "competition_risk": 42,
+  "strategic_value": 95,
+  "recommended_strategy": "Prime Contractor",
+  "why_it_matches": [
+    "XR simulation overlap",
+    "Unity experience alignment",
+    "Visualization systems match"
+  ],
+  "why_it_does_not_match": [],
+  "subcontracting_recommendations": [],
+  "estimated_proposal_effort": "Medium",
+  "estimated_win_probability": "High"
+}
+
+==================================================
+CONTRACT FILTERING LOGIC
+==================================================
+
+The system should suppress:
+- low-fit contracts
+- unrealistic opportunities
+- impossible qualification scenarios
+- high-risk delivery contracts
+
+unless explicitly requested by the user.
+
+==================================================
+DISCOVERY MODES
+==================================================
+
+The user should eventually be able to choose qualification aggressiveness.
+
+==================================================
+CONSERVATIVE MODE
+==================================================
+
+Show only:
+- high-confidence matches
+- highly executable contracts
+- strong win probability
+
+==================================================
+GROWTH MODE
+==================================================
+
+Include:
+- moderate stretch opportunities
+- strategically beneficial opportunities
+- adjacent capability contracts
+
+==================================================
+AGGRESSIVE MODE
+==================================================
+
+Include:
+- subcontract opportunities
+- teaming opportunities
+- ambitious stretch contracts
+- relationship-building contracts
+
+==================================================
+SUBCONTRACTING INTELLIGENCE
+==================================================
+
+The platform should identify:
+- contracts unsuitable for prime pursuit
+- contracts suitable for subcontract participation
+- likely areas where the user could contribute specialized expertise
+
+EXAMPLES:
+- XR subsystem contribution
+- visualization support
+- AI workflow support
+- dashboard development
+- simulation engineering
+
+OUTPUT EXAMPLE:
+
+{
+  "recommended_strategy": "Subcontractor",
+  "prime_bid_recommended": false,
+  "possible_fit_areas": [
+    "XR visualization",
+    "Simulation tooling",
+    "Interactive systems"
+  ]
+}
+
+==================================================
+PAST PERFORMANCE GAP ANALYSIS
+==================================================
+
+The platform should detect:
+- missing certifications
+- missing contract history
+- required domain experience gaps
+- operational maturity gaps
+
+EXAMPLES:
+- Tanker simulator experience required
+- Overseas support required
+- Existing federal contract vehicle participation required
+
+OUTPUT:
+Gap Analysis Report
+
+==================================================
+OPPORTUNITY SUPPRESSION SYSTEM
+==================================================
+
+If opportunity mismatch is severe:
+the system should suppress the contract entirely by default.
+
+EXAMPLES:
+- company too small
+- unsupported clearance requirements
+- impossible staffing scale
+- irrelevant technical scope
+- unrelated industry category
+
+==================================================
+IMPORTANT PRODUCT DIFFERENTIATOR
+==================================================
+
+Most procurement platforms optimize for:
+“database access”
+
+GovSignal AI should optimize for:
+“decision intelligence”
+
+==================================================
+PLATFORM GOAL
+==================================================
+
+The platform should help users:
+- avoid wasting proposal effort
+- avoid low-probability bids
+- identify strategic opportunities
+- pursue realistic contracts
+- maximize operational alignment
+- increase contract win probability
+
+==================================================
+FINAL PRODUCT PHILOSOPHY
+==================================================
+
+The platform is NOT intended to:
+- flood users with opportunities
+- encourage indiscriminate bidding
+- maximize proposal count
+
+The platform IS intended to:
+- intelligently qualify opportunities
+- strategically filter contracts
+- identify realistic pursuits
+- reduce operational risk
+- improve bid efficiency
+- increase probability of successful execution
+
+The system should function as:
+“AI-assisted procurement decision intelligence”
