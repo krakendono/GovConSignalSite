@@ -15,6 +15,14 @@ function parseCodeCsv(value: string) {
   return parseCsv(value).map((item) => item.toUpperCase())
 }
 
+function getNaicsTitle(code: string) {
+  const titles: Record<string, string> = {
+    '336413': 'Other Aircraft Parts and Auxiliary Equipment Manufacturing',
+  }
+
+  return titles[code] ?? null
+}
+
 export async function saveWatchlist(formData: FormData) {
   if (!isSupabaseConfigured()) {
     redirect('/watchlists?error=Supabase%20is%20not%20configured')
@@ -40,6 +48,7 @@ export async function saveWatchlist(formData: FormData) {
   }
 
   const name = String(formData.get('name') ?? '').trim()
+  const watchlistId = String(formData.get('watchlistId') ?? '').trim()
   const keywords = parseCsv(String(formData.get('keywords') ?? ''))
   const naicsCodes = parseCodeCsv(String(formData.get('naicsCodes') ?? ''))
   const pscCodes = parseCodeCsv(String(formData.get('pscCodes') ?? ''))
@@ -49,15 +58,36 @@ export async function saveWatchlist(formData: FormData) {
     redirect('/watchlists?error=Watchlist%20name%20is%20required')
   }
 
-  const { data: watchlist, error: watchlistError } = await supabase
-    .from('watchlists')
-    .insert({ company_id: company.id, name })
-    .select('id')
-    .single()
+  if (keywords.length === 0) {
+    redirect('/watchlists?error=At%20least%20one%20keyword%20is%20required')
+  }
+
+  if (naicsCodes.length === 0) {
+    redirect('/watchlists?error=At%20least%20one%20NAICS%20code%20is%20required')
+  }
+
+  const { data: watchlist, error: watchlistError } = watchlistId
+    ? await supabase
+        .from('watchlists')
+        .update({ name })
+        .eq('id', watchlistId)
+        .eq('company_id', company.id)
+        .select('id')
+        .single()
+    : await supabase
+        .from('watchlists')
+        .insert({ company_id: company.id, name })
+        .select('id')
+        .single()
 
   if (watchlistError || !watchlist) {
     redirect(`/watchlists?error=${encodeURIComponent(watchlistError?.message ?? 'Watchlist save failed')}`)
   }
+
+  await supabase.from('watchlist_keywords').delete().eq('watchlist_id', watchlist.id)
+  await supabase.from('watchlist_naics').delete().eq('watchlist_id', watchlist.id)
+  await supabase.from('watchlist_psc').delete().eq('watchlist_id', watchlist.id)
+  await supabase.from('watchlist_exclusions').delete().eq('watchlist_id', watchlist.id)
 
   if (keywords.length > 0) {
     await supabase.from('watchlist_keywords').insert(
@@ -66,7 +96,15 @@ export async function saveWatchlist(formData: FormData) {
   }
 
   if (naicsCodes.length > 0) {
-    await supabase.from('naics_codes').upsert(naicsCodes.map((code) => ({ code })), { onConflict: 'code' })
+    await supabase
+      .from('naics_codes')
+      .upsert(
+        naicsCodes.map((code) => ({
+          code,
+          title: getNaicsTitle(code),
+        })),
+        { onConflict: 'code' },
+      )
     await supabase.from('watchlist_naics').insert(
       naicsCodes.map((naicsCode) => ({ watchlist_id: watchlist.id, naics_code: naicsCode })),
     )

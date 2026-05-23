@@ -8,6 +8,7 @@ type WatchlistsPageProps = {
   searchParams?: Promise<{
     message?: string
     error?: string
+    editId?: string
   }>
 }
 
@@ -19,6 +20,7 @@ export default async function WatchlistsPage({ searchParams }: WatchlistsPagePro
   const params = searchParams ? await searchParams : undefined
   const message = params?.message
   const error = params?.error
+  const editId = params?.editId
 
   if (!isSupabaseConfigured()) {
     return (
@@ -63,6 +65,10 @@ export default async function WatchlistsPage({ searchParams }: WatchlistsPagePro
 
   const watchlistIds = (watchlists ?? []).map((item) => item.id)
 
+  const editingWatchlist = editId
+    ? (watchlists ?? []).find((watchlist) => watchlist.id === editId) ?? null
+    : null
+
   const [keywordsResult, naicsResult, pscResult, exclusionsResult] = await Promise.all([
     watchlistIds.length > 0
       ? supabase.from('watchlist_keywords').select('watchlist_id, keyword').in('watchlist_id', watchlistIds)
@@ -106,6 +112,11 @@ export default async function WatchlistsPage({ searchParams }: WatchlistsPagePro
     exclusionMap.set(row.watchlist_id, existing)
   })
 
+  const editingKeywords = editingWatchlist ? keywordMap.get(editingWatchlist.id) ?? [] : []
+  const editingNaics = editingWatchlist ? naicsMap.get(editingWatchlist.id) ?? [] : []
+  const editingPsc = editingWatchlist ? pscMap.get(editingWatchlist.id) ?? [] : []
+  const editingExclusions = editingWatchlist ? exclusionMap.get(editingWatchlist.id) ?? [] : []
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#dbeafe,transparent_35%),linear-gradient(180deg,#f7f8f5,#eef2ff)] px-6 py-16">
       <section className="mx-auto max-w-5xl">
@@ -128,41 +139,90 @@ export default async function WatchlistsPage({ searchParams }: WatchlistsPagePro
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-ink">Create watchlist</h2>
+            <h2 className="text-lg font-semibold text-ink">{editingWatchlist ? 'Edit watchlist' : 'Create watchlist'}</h2>
+            {editingWatchlist ? (
+              <p className="mt-2 text-sm text-slate-600">
+                Editing {editingWatchlist.name}. Save to update the existing watchlist instead of creating a new one.
+              </p>
+            ) : null}
             <form action={saveWatchlist} className="mt-5 space-y-4">
+              {editingWatchlist ? <input type="hidden" name="watchlistId" value={editingWatchlist.id} /> : null}
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="name">
                   Watchlist name
                 </label>
-                <input id="name" name="name" required className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Core federal targets" />
+                <input
+                  id="name"
+                  name="name"
+                  required
+                  defaultValue={editingWatchlist?.name ?? ''}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  placeholder="Core federal targets"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="keywords">
                   Keywords
                 </label>
-                <input id="keywords" name="keywords" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="cloud migration, cybersecurity, data analytics" />
+                <input
+                  id="keywords"
+                  name="keywords"
+                  required
+                  defaultValue={editingKeywords.join(', ')}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  placeholder="cloud migration, cybersecurity, data analytics"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="naicsCodes">
                   NAICS codes
                 </label>
-                <input id="naicsCodes" name="naicsCodes" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="541512, 541511" />
+                <input
+                  id="naicsCodes"
+                  name="naicsCodes"
+                  required
+                  defaultValue={editingNaics.join(', ')}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  placeholder="541512, 541511"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="pscCodes">
                   PSC codes
                 </label>
-                <input id="pscCodes" name="pscCodes" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="R425, D302" />
+                <input
+                  id="pscCodes"
+                  name="pscCodes"
+                  defaultValue={editingPsc.join(', ')}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  placeholder="R425, D302"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="exclusions">
                   Exclusions
                 </label>
-                <input id="exclusions" name="exclusions" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="construction, staffing, medical" />
+                <input
+                  id="exclusions"
+                  name="exclusions"
+                  defaultValue={editingExclusions.join(', ')}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  placeholder="construction, staffing, medical"
+                />
               </div>
-              <button type="submit" className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-                Save watchlist
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button type="submit" className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
+                  {editingWatchlist ? 'Update watchlist' : 'Save watchlist'}
+                </button>
+                {editingWatchlist ? (
+                  <Link
+                    href="/watchlists"
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+                  >
+                    Cancel edit
+                  </Link>
+                ) : null}
+              </div>
             </form>
           </section>
 
@@ -177,12 +237,17 @@ export default async function WatchlistsPage({ searchParams }: WatchlistsPagePro
                         <h3 className="font-medium text-ink">{watchlist.name}</h3>
                         <p className="text-xs text-slate-500">{watchlist.is_active ? 'Active' : 'Inactive'}</p>
                       </div>
-                      <form action={deleteWatchlist}>
-                        <input type="hidden" name="watchlistId" value={watchlist.id} />
-                        <button type="submit" className="text-sm font-medium text-signal hover:underline">
-                          Delete
-                        </button>
-                      </form>
+                      <div className="flex gap-3">
+                        <Link href={`/watchlists?editId=${watchlist.id}`} className="text-sm font-medium text-accent hover:underline">
+                          Edit
+                        </Link>
+                        <form action={deleteWatchlist}>
+                          <input type="hidden" name="watchlistId" value={watchlist.id} />
+                          <button type="submit" className="text-sm font-medium text-signal hover:underline">
+                            Delete
+                          </button>
+                        </form>
+                      </div>
                     </div>
                     <dl className="mt-4 grid gap-3 text-sm text-slate-700">
                       <div>

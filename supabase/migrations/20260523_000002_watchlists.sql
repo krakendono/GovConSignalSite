@@ -37,6 +37,8 @@ create table if not exists public.watchlist_exclusions (
   created_at timestamptz not null default now()
 );
 
+drop trigger if exists set_watchlists_updated_at on public.watchlists;
+
 create trigger set_watchlists_updated_at
 before update on public.watchlists
 for each row execute function public.set_updated_at();
@@ -47,6 +49,7 @@ alter table public.watchlist_naics enable row level security;
 alter table public.watchlist_psc enable row level security;
 alter table public.watchlist_exclusions enable row level security;
 
+drop policy if exists "watchlists_select_own" on public.watchlists;
 create policy "watchlists_select_own" on public.watchlists
 for select using (
   exists (
@@ -55,6 +58,7 @@ for select using (
   )
 );
 
+drop policy if exists "watchlists_insert_own" on public.watchlists;
 create policy "watchlists_insert_own" on public.watchlists
 for insert with check (
   exists (
@@ -63,6 +67,7 @@ for insert with check (
   )
 );
 
+drop policy if exists "watchlists_update_own" on public.watchlists;
 create policy "watchlists_update_own" on public.watchlists
 for update using (
   exists (
@@ -76,6 +81,7 @@ for update using (
   )
 );
 
+drop policy if exists "watchlists_delete_own" on public.watchlists;
 create policy "watchlists_delete_own" on public.watchlists
 for delete using (
   exists (
@@ -84,6 +90,7 @@ for delete using (
   )
 );
 
+drop policy if exists "watchlist_keywords_own" on public.watchlist_keywords;
 create policy "watchlist_keywords_own" on public.watchlist_keywords
 for all using (
   exists (
@@ -101,6 +108,7 @@ for all using (
   )
 );
 
+drop policy if exists "watchlist_naics_own" on public.watchlist_naics;
 create policy "watchlist_naics_own" on public.watchlist_naics
 for all using (
   exists (
@@ -118,6 +126,7 @@ for all using (
   )
 );
 
+drop policy if exists "watchlist_psc_own" on public.watchlist_psc;
 create policy "watchlist_psc_own" on public.watchlist_psc
 for all using (
   exists (
@@ -135,6 +144,7 @@ for all using (
   )
 );
 
+drop policy if exists "watchlist_exclusions_own" on public.watchlist_exclusions;
 create policy "watchlist_exclusions_own" on public.watchlist_exclusions
 for all using (
   exists (
@@ -151,3 +161,32 @@ for all using (
     where w.id = watchlist_exclusions.watchlist_id and c.owner_user_id = auth.uid()
   )
 );
+
+drop policy if exists "naics_read_authenticated" on public.naics_codes;
+create policy "naics_read_authenticated" on public.naics_codes
+for select to authenticated using (true);
+
+drop policy if exists "naics_insert_authenticated" on public.naics_codes;
+create policy "naics_insert_authenticated" on public.naics_codes
+for insert to authenticated with check (true);
+
+drop policy if exists "naics_update_authenticated" on public.naics_codes;
+create policy "naics_update_authenticated" on public.naics_codes
+for update to authenticated using (true) with check (true);
+
+drop policy if exists "psc_read_authenticated" on public.psc_codes;
+create policy "psc_read_authenticated" on public.psc_codes
+for select to authenticated using (true);
+
+drop policy if exists "psc_insert_authenticated" on public.psc_codes;
+create policy "psc_insert_authenticated" on public.psc_codes
+for insert to authenticated with check (true);
+
+drop policy if exists "psc_update_authenticated" on public.psc_codes;
+create policy "psc_update_authenticated" on public.psc_codes
+for update to authenticated using (true) with check (true);
+
+insert into public.naics_codes (code, title)
+values ('336413', 'Other Aircraft Parts and Auxiliary Equipment Manufacturing')
+on conflict (code) do update
+set title = excluded.title;
