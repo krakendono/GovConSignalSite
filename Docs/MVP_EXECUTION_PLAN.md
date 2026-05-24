@@ -54,9 +54,11 @@ When uncertain or scope expands unexpectedly, return to the current MVP phase an
 - Step 5: Database schema migration for users, companies, company_profiles, NAICS/PSC tables, and RLS policies.
 - Step 6 (started): Company profile intake page with save action and NAICS/PSC mapping persistence.
 - Step 7 (delivered): Watchlists tables, watchlist creation page, and delete flow.
+- Step 8 (delivered): SAM.gov opportunities sync endpoint integration.
+- Step 9 (delivered): Opportunity storage and basic company/watchlist match persistence.
 
 ## Next Build Slice
 
-- Opportunities ingestion from SAM.gov.
-- Opportunity storage.
-- Basic filtering against watchlists and company profile data.
+- Opportunity dashboard refinements and ranking UX.
+- AI summaries over synced opportunities.
+- Expanded match scoring logic.

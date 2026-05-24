@@ -1,0 +1,531 @@
+==================================================
+ADMIN, USAGE, SECURITY & PLATFORM OBSERVABILITY LAYER
+==================================================
+
+PURPOSE:
+The platform requires an internal admin system to monitor usage, detect suspicious behavior, manage users, control costs, review system health, and understand how customers use the product.
+
+This is required for:
+- SaaS operations
+- billing integrity
+- AI cost control
+- abuse prevention
+- customer support
+- product analytics
+- security compliance
+- GovCon trust
+
+==================================================
+ADMIN PANEL GOALS
+==================================================
+
+The admin panel should allow internal operators to:
+
+1. View all users
+2. View all companies
+3. View usage by account
+4. View AI token/API usage
+5. View opportunity searches
+6. View proposal generations
+7. View exports
+8. View uploaded documents
+9. View billing/subscription status
+10. Detect suspicious usage
+11. Flag risky accounts
+12. Suspend or restrict accounts
+13. Review error logs
+14. Review system performance
+15. Understand product behavior
+
+==================================================
+ADMIN DASHBOARD PAGES
+==================================================
+
+/admin
+
+/admin/users
+/admin/companies
+/admin/usage
+/admin/billing
+/admin/opportunities
+/admin/proposals
+/admin/uploads
+/admin/alerts
+/admin/flags
+/admin/audit-logs
+/admin/api-logs
+/admin/ai-costs
+/admin/system-health
+/admin/analytics
+/admin/settings
+
+==================================================
+USER MANAGEMENT
+==================================================
+
+Admin should be able to view:
+
+- user ID
+- name
+- email
+- company
+- role
+- signup date
+- last login
+- subscription plan
+- account status
+- usage level
+- flagged status
+
+Admin actions:
+
+- suspend user
+- reactivate user
+- reset usage limits
+- change plan manually
+- view user activity
+- view billing status
+- add internal notes
+
+==================================================
+COMPANY MANAGEMENT
+==================================================
+
+Admin should be able to view:
+
+- company name
+- UEI
+- CAGE code
+- NAICS codes
+- PSC codes
+- certifications
+- watchlists
+- opportunity matches
+- proposal projects
+- team members
+- uploaded documents
+- risk flags
+
+==================================================
+USAGE TRACKING
+==================================================
+
+Track:
+
+- searches performed
+- watchlists created
+- opportunities viewed
+- opportunities saved
+- AI summaries generated
+- match scores generated
+- proposal drafts generated
+- documents uploaded
+- exports created
+- historical award searches
+- supplier searches
+- subcontractor searches
+- alerts sent
+- login frequency
+
+==================================================
+AI COST TRACKING
+==================================================
+
+Track per user/company:
+
+- AI requests
+- model used
+- input tokens
+- output tokens
+- estimated cost
+- failed requests
+- retry count
+- expensive workflows
+- proposal generation costs
+- document analysis costs
+- historical intelligence costs
+
+Admin should see:
+
+- daily AI cost
+- monthly AI cost
+- cost by user
+- cost by company
+- cost by feature
+- cost by model
+
+==================================================
+ABUSE / SUSPICIOUS BEHAVIOR DETECTION
+==================================================
+
+Flag users for:
+
+- excessive API usage
+- scraping-like behavior
+- repeated bulk exports
+- repeated failed logins
+- unusual download patterns
+- many accounts from same IP
+- many companies from same user
+- unusually high AI costs
+- mass proposal generation
+- suspicious payment behavior
+- usage inconsistent with plan limits
+
+==================================================
+SUSPICIOUS BEHAVIOR FLAGS
+==================================================
+
+Examples:
+
+{
+  "flag_type": "excessive_exports",
+  "severity": "medium",
+  "reason": "User exported 500 opportunities in 1 hour",
+  "recommended_action": "Review account"
+}
+
+{
+  "flag_type": "ai_cost_spike",
+  "severity": "high",
+  "reason": "User generated $90 AI cost in one day on Starter plan",
+  "recommended_action": "Temporarily restrict AI generation"
+}
+
+==================================================
+PLAN LIMIT ENFORCEMENT
+==================================================
+
+Track limits by plan:
+
+STARTER:
+- limited watchlists
+- limited AI summaries
+- limited proposal drafts
+- limited historical searches
+
+PRO:
+- higher limits
+- more watchlists
+- proposal generation
+- historical intelligence
+
+AGENCY:
+- team accounts
+- bulk analysis
+- higher AI limits
+- advanced analytics
+
+Admin should be able to override limits manually.
+
+==================================================
+AUDIT LOGS
+==================================================
+
+Log important actions:
+
+- login
+- logout
+- password reset
+- company profile update
+- watchlist creation
+- opportunity saved
+- proposal generated
+- proposal exported
+- document uploaded
+- document deleted
+- billing plan changed
+- admin action
+- account suspension
+- user role changed
+- API key usage
+- AI generation request
+
+Audit log fields:
+
+audit_logs
+- id
+- user_id
+- company_id
+- action_type
+- entity_type
+- entity_id
+- ip_address
+- user_agent
+- metadata_json
+- created_at
+
+==================================================
+ADMIN ACTION LOGS
+==================================================
+
+Every admin action must be logged.
+
+Examples:
+- admin suspended user
+- admin changed plan
+- admin deleted upload
+- admin viewed flagged account
+- admin reset usage
+
+==================================================
+PRODUCT ANALYTICS
+==================================================
+
+Track:
+
+- activation rate
+- watchlists created per user
+- opportunities saved per user
+- proposal drafts per company
+- most-used keywords
+- most-used NAICS codes
+- most-used PSC codes
+- average match score
+- conversion from viewed → saved
+- conversion from saved → proposal
+- conversion from proposal → submitted
+- user retention
+- churn indicators
+
+==================================================
+FUNNEL ANALYTICS
+==================================================
+
+Core funnel:
+
+Signup
+→ Company Profile Created
+→ Watchlist Created
+→ Opportunity Viewed
+→ Opportunity Saved
+→ AI Summary Generated
+→ Proposal Draft Generated
+→ Export Created
+→ User Marks Submitted
+→ User Marks Won/Lost
+
+This funnel is critical for product learning.
+
+==================================================
+WIN / LOSS TRACKING
+==================================================
+
+Users should eventually be able to mark:
+
+- pursuing
+- not pursuing
+- submitted
+- won
+- lost
+- waiting
+- subcontracting
+- disqualified
+
+Admin analytics should track:
+
+- user win rate
+- category win rate
+- opportunity type performance
+- common loss reasons
+- pricing gap patterns
+- category difficulty
+
+==================================================
+DATA COLLECTION FOR MODEL IMPROVEMENT
+==================================================
+
+Collect structured data from user behavior:
+
+- which opportunities users ignore
+- which opportunities users save
+- which ones become proposals
+- which ones are won/lost
+- why users reject opportunities
+- what gaps appear most often
+- what strategies work best
+
+IMPORTANT:
+User data must be handled securely.
+Do not use private company documents for model training without explicit permission.
+
+==================================================
+PRIVACY & DATA RULES
+==================================================
+
+The platform must clearly separate:
+
+1. Platform analytics
+2. Customer private data
+3. Uploaded documents
+4. Proposal drafts
+5. Competitive intelligence records
+
+Private user/company documents should not be exposed to other users.
+
+Admin access to sensitive documents should be restricted and logged.
+
+==================================================
+SECURITY MONITORING
+==================================================
+
+Track:
+
+- failed logins
+- suspicious IPs
+- unusual geo-location changes
+- privilege escalation attempts
+- large exports
+- repeated document downloads
+- repeated API failures
+- webhook failures
+- billing failures
+
+==================================================
+SYSTEM HEALTH DASHBOARD
+==================================================
+
+Admin should monitor:
+
+- SAM.gov API status
+- USAspending API status
+- AI provider status
+- database health
+- queue health
+- failed jobs
+- delayed jobs
+- email delivery
+- Stripe webhook status
+- document parsing errors
+- background job failures
+
+==================================================
+BACKGROUND JOB MONITORING
+==================================================
+
+Track jobs:
+
+- opportunity ingestion
+- watchlist matching
+- AI summary generation
+- historical award analysis
+- ZIP parsing
+- supplier discovery
+- notification sending
+- proposal export generation
+
+Each job should have:
+
+- status
+- started_at
+- completed_at
+- failed_at
+- error_message
+- retry_count
+- related user/company
+
+==================================================
+ADMIN DATABASE TABLES
+==================================================
+
+admin_users
+admin_roles
+admin_permissions
+audit_logs
+admin_action_logs
+usage_events
+ai_usage_logs
+api_request_logs
+billing_events
+security_flags
+system_errors
+background_jobs
+product_analytics_events
+feature_usage
+user_flags
+plan_limits
+
+==================================================
+ROLE-BASED ADMIN ACCESS
+==================================================
+
+Admin roles:
+
+SUPER_ADMIN:
+Full access.
+
+SUPPORT_ADMIN:
+Can view users and usage, cannot view sensitive proposal docs unless granted.
+
+BILLING_ADMIN:
+Can view billing/subscription data only.
+
+SECURITY_ADMIN:
+Can view flags, audit logs, suspicious activity.
+
+PRODUCT_ADMIN:
+Can view analytics, feature usage, funnel data.
+
+==================================================
+IMPORTANT SAFETY RULES
+==================================================
+
+Admins should NOT casually access:
+- private proposal drafts
+- uploaded company documents
+- sensitive company profiles
+
+If sensitive data is accessed:
+- log who accessed it
+- log why
+- log timestamp
+
+==================================================
+MVP ADMIN PANEL
+==================================================
+
+Build only:
+
+1. Users table
+2. Companies table
+3. Usage dashboard
+4. AI cost dashboard
+5. Audit logs
+6. Flags dashboard
+7. Billing overview
+8. Background job logs
+
+Do NOT overbuild at first.
+
+==================================================
+ADMIN MVP BUILD ORDER
+==================================================
+
+1. Create /admin route
+2. Add admin-only auth role
+3. Create users table view
+4. Create companies table view
+5. Log major usage events
+6. Log AI requests
+7. Add usage dashboard
+8. Add billing dashboard
+9. Add security flags
+10. Add audit logs
+11. Add job monitoring
+
+==================================================
+FINAL PRINCIPLE
+==================================================
+
+The admin panel is not just for control.
+
+It is the command center for:
+- product learning
+- abuse prevention
+- cost control
+- security
+- customer support
+- model improvement
+- SaaS operations
+
+Without this layer, the platform cannot safely scale.

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/env'
+import { logAuditAction } from '@/lib/audit'
 
 function parseCsv(value: string) {
   return value
@@ -35,6 +36,10 @@ export async function saveWatchlist(formData: FormData) {
 
   if (!user) {
     redirect('/auth/login')
+  }
+
+  if (user.is_anonymous) {
+    redirect('/watchlists?error=Temporary%20session%20is%20read-only.%20Sign%20in%20to%20save%20watchlists')
   }
 
   const { data: company } = await supabase
@@ -123,6 +128,20 @@ export async function saveWatchlist(formData: FormData) {
     )
   }
 
+  await logAuditAction({
+    actorUserId: user.id,
+    action: watchlistId ? 'watchlist.updated' : 'watchlist.created',
+    entityType: 'watchlist',
+    entityId: watchlist.id,
+    metadata: {
+      name,
+      keywordCount: keywords.length,
+      naicsCount: naicsCodes.length,
+      pscCount: pscCodes.length,
+      exclusionCount: exclusions.length,
+    },
+  })
+
   redirect('/watchlists?message=Watchlist%20saved')
 }
 
@@ -146,6 +165,10 @@ export async function deleteWatchlist(formData: FormData) {
     redirect('/auth/login')
   }
 
+  if (user.is_anonymous) {
+    redirect('/watchlists?error=Temporary%20session%20is%20read-only.%20Sign%20in%20to%20manage%20watchlists')
+  }
+
   const { data: company } = await supabase
     .from('companies')
     .select('id')
@@ -161,6 +184,13 @@ export async function deleteWatchlist(formData: FormData) {
   if (error) {
     redirect(`/watchlists?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAuditAction({
+    actorUserId: user.id,
+    action: 'watchlist.deleted',
+    entityType: 'watchlist',
+    entityId: watchlistId,
+  })
 
   redirect('/watchlists?message=Watchlist%20deleted')
 }

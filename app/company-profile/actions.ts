@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/env'
+import { logAuditAction } from '@/lib/audit'
 
 function parseCsv(value: string) {
   return value
@@ -27,6 +28,10 @@ export async function saveCompanyProfile(formData: FormData) {
 
   if (!user) {
     redirect('/auth/login')
+  }
+
+  if (user.is_anonymous) {
+    redirect('/company-profile?error=Temporary%20session%20is%20read-only.%20Sign%20in%20to%20save%20company%20data')
   }
 
   const companyName = String(formData.get('companyName') ?? '').trim()
@@ -104,6 +109,19 @@ export async function saveCompanyProfile(formData: FormData) {
   if (userUpsertError) {
     redirect(`/company-profile?error=${encodeURIComponent(userUpsertError.message)}`)
   }
+
+  await logAuditAction({
+    actorUserId: user.id,
+    action: 'company_profile.saved',
+    entityType: 'company',
+    entityId: companyId,
+    metadata: {
+      hasWebsite: Boolean(website),
+      naicsCount: naicsCodes.length,
+      pscCount: pscCodes.length,
+      keywordsCount: keywords.length,
+    },
+  })
 
   redirect('/company-profile?message=Profile%20saved')
 }

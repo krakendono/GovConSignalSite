@@ -123,3 +123,27 @@ Watchlist creation and storage are now implemented:
 - [supabase/migrations/20260523_000002_watchlists.sql](supabase/migrations/20260523_000002_watchlists.sql)
 
 Dashboard now links into the watchlists workflow.
+
+## Step 6 Progress: Admin and Audit
+
+Admin oversight and audit logging are now implemented:
+
+- [app/admin/page.tsx](app/admin/page.tsx)
+- [app/admin/actions.ts](app/admin/actions.ts)
+- [supabase/migrations/20260523_000003_admin_audit.sql](supabase/migrations/20260523_000003_admin_audit.sql)
+
+Security handling:
+
+- Audit logs are metadata-only and are sanitized to avoid password or payment-card fields.
+- Admin access is gated by `ADMIN_EMAILS` in environment configuration.
+
+## Step 7 Progress: Opportunities Ingestion and Matching
+
+SAM.gov opportunities sync and storage are now implemented:
+
+- [app/opportunities/page.tsx](app/opportunities/page.tsx)
+- [app/opportunities/actions.ts](app/opportunities/actions.ts)
+- [lib/samgov.ts](lib/samgov.ts)
+- [supabase/migrations/20260524_000004_opportunities.sql](supabase/migrations/20260524_000004_opportunities.sql)
+
+Dashboard now links into the opportunities workflow.

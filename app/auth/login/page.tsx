@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {
   signInAnonymously,
+  sendPasswordResetLink,
   signInWithMagicLink,
   signInWithPassword,
   signUpWithPassword,
@@ -10,6 +11,7 @@ type LoginPageProps = {
   searchParams?: Promise<{
     message?: string
     error?: string
+    intent?: string
   }>
 }
 
@@ -17,12 +19,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = searchParams ? await searchParams : undefined
   const message = params?.message
   const error = params?.error
+  const isSignupIntent = params?.intent === 'signup'
+  const isLocalBypassMode = process.env.NODE_ENV !== 'production'
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#dcfce7,transparent_40%),linear-gradient(180deg,#f8fafc,#eef2ff)] px-6 py-20">
       <section className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">GovSignal AI</p>
-        <h1 className="mt-3 text-2xl font-semibold text-ink">Sign in</h1>
+        <h1 className="mt-3 text-2xl font-semibold text-ink">{isSignupIntent ? 'Create account' : 'Sign in'}</h1>
         <p className="mt-2 text-sm text-slate-600">Use password sign-in for local development or magic link when email is configured.</p>
         <form action={signInAnonymously} className="mt-5">
           <button
@@ -69,17 +73,20 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="grid gap-2">
             <button
               type="submit"
+              formAction={isSignupIntent ? signUpWithPassword : signInWithPassword}
               className="w-full rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
             >
-              Sign in with password
+              {isSignupIntent ? 'Create account' : 'Sign in with password'}
             </button>
-            <button
-              type="submit"
-              formAction={signUpWithPassword}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Create account
-            </button>
+            {!isSignupIntent ? (
+              <button
+                type="submit"
+                formAction={sendPasswordResetLink}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                {isLocalBypassMode ? 'Forgot password (local admin bypass)' : 'Forgot password'}
+              </button>
+            ) : null}
             <button
               type="submit"
               formAction={signInWithMagicLink}
@@ -92,6 +99,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="mt-4 text-xs text-slate-500">
           For local development, anonymous sign-in is the fastest path. Password sign-in and magic link are still available if you want a named account.
         </p>
+        <div className="mt-3">
+          {isSignupIntent ? (
+            <Link href="/auth/login" className="text-sm font-medium text-signal hover:underline">
+              Already have an account? Sign in
+            </Link>
+          ) : (
+            <Link href="/auth/login?intent=signup" className="text-sm font-medium text-signal hover:underline">
+              Need an account? Create one
+            </Link>
+          )}
+        </div>
 
         <Link href="/" className="mt-6 inline-block text-sm font-medium text-signal hover:underline">
           Back to home

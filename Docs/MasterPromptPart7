@@ -1,0 +1,424 @@
+==================================================
+POST-MVP EXPANSION LAYER
+OPERATIONAL CRITICALITY, TRUST & INCUMBENT RISK ENGINE
+==================================================
+
+PURPOSE:
+The platform must understand that not all government contracts carry the same operational risk, trust requirements, or incumbent resistance.
+
+Some contracts are:
+- replaceable procurement
+- commodity fulfillment
+- low-risk acquisitions
+
+Other contracts are:
+- mission-critical infrastructure
+- financial systems
+- public safety systems
+- identity systems
+- secure operational systems
+- benefits verification systems
+
+The platform must distinguish between these categories because they dramatically affect:
+- win probability
+- operational maturity requirements
+- incumbent advantage
+- switching risk
+- subcontracting feasibility
+- execution risk
+
+==================================================
+CORE PHILOSOPHY
+==================================================
+
+The platform should NOT evaluate contracts solely by:
+- technical fit
+- pricing
+- capability overlap
+
+The platform MUST also evaluate:
+- operational trust level
+- switching cost
+- incumbent entrenchment
+- mission criticality
+- public impact risk
+- compliance burden
+- operational continuity risk
+
+==================================================
+IMPORTANT SYSTEM RULE
+==================================================
+
+The more operationally critical the system:
+- the stronger incumbent advantage becomes
+- the more operational maturity matters
+- the more trust history matters
+- the less likely new vendors are to win as prime
+
+==================================================
+OPERATIONAL CRITICALITY ENGINE
+==================================================
+
+PURPOSE:
+Classify contracts by operational sensitivity and trust requirements.
+
+==================================================
+CRITICALITY LEVELS
+==================================================
+
+LEVEL 1 — LOW CRITICALITY
+Examples:
+- office supplies
+- printers
+- commodity hardware
+- furniture
+- simple fulfillment
+
+Characteristics:
+- low switching cost
+- low operational impact
+- low trust sensitivity
+
+==================================================
+LEVEL 2 — MODERATE CRITICALITY
+Examples:
+- internal dashboards
+- reporting tools
+- analytics systems
+- training systems
+- visualization systems
+
+Characteristics:
+- moderate operational importance
+- moderate switching risk
+
+==================================================
+LEVEL 3 — HIGH CRITICALITY
+Examples:
+- operational support systems
+- secure communications
+- logistics coordination
+- infrastructure monitoring
+- healthcare support systems
+
+Characteristics:
+- elevated trust requirements
+- higher continuity requirements
+
+==================================================
+LEVEL 4 — MISSION CRITICAL
+Examples:
+- benefits verification
+- payment systems
+- identity systems
+- financial verification
+- law enforcement systems
+- emergency response systems
+
+Characteristics:
+- extreme operational sensitivity
+- high uptime expectations
+- major switching risk
+- strong incumbent advantage
+
+==================================================
+LEVEL 5 — NATIONAL INFRASTRUCTURE / DEFENSE SENSITIVE
+Examples:
+- classified systems
+- defense operational infrastructure
+- intelligence systems
+- national communications
+- critical financial infrastructure
+
+Characteristics:
+- maximum trust sensitivity
+- massive operational risk
+- highly restricted procurement ecosystem
+
+==================================================
+TRUST REQUIREMENT ENGINE
+==================================================
+
+PURPOSE:
+Determine how much institutional trust is required for the opportunity.
+
+FACTORS:
+- financial data access
+- citizen data access
+- operational continuity
+- public impact
+- national security relevance
+- integration depth
+- regulatory exposure
+- uptime requirements
+- secure infrastructure requirements
+
+OUTPUT:
+Trust Requirement Score
+0-100
+
+==================================================
+SWITCHING COST ENGINE
+==================================================
+
+PURPOSE:
+Estimate how difficult and risky it is for the government to replace the incumbent vendor.
+
+FACTORS:
+- system integrations
+- nationwide deployment
+- operational continuity dependency
+- user retraining burden
+- migration complexity
+- financial impact of downtime
+- institutional familiarity
+- operational disruption risk
+
+==================================================
+SWITCHING COST LEVELS
+==================================================
+
+LOW
+Examples:
+- office products
+- commodity hardware
+- standard fulfillment
+
+MEDIUM
+Examples:
+- dashboards
+- reporting systems
+- internal tools
+
+HIGH
+Examples:
+- operational platforms
+- integrated workflows
+- regional systems
+
+EXTREME
+Examples:
+- financial verification
+- benefits systems
+- payment systems
+- identity infrastructure
+- mission-critical infrastructure
+
+==================================================
+INCUMBENT LOCK ENGINE
+==================================================
+
+PURPOSE:
+Determine whether the incumbent vendor likely has structural advantage.
+
+ANALYZE:
+- repeat award history
+- operational criticality
+- integration depth
+- contract duration
+- recompete frequency
+- agency dependence
+- switching cost
+- operational trust level
+
+OUTPUT:
+Incumbent Lock Score
+0-100
+
+==================================================
+INCUMBENT LOCK EXAMPLES
+==================================================
+
+LOW LOCK
+Examples:
+- lumber procurement
+- printer procurement
+- generic supplies
+
+HIGH LOCK
+Examples:
+- SSA financial verification systems
+- benefits processing systems
+- enterprise operational infrastructure
+
+==================================================
+OPERATIONAL MATURITY REQUIREMENTS
+==================================================
+
+The platform should increase required maturity when:
+- trust requirements rise
+- operational continuity matters
+- public impact increases
+- compliance burden increases
+- switching cost increases
+
+==================================================
+MATURITY FACTORS
+==================================================
+
+Analyze:
+- years in business
+- operational scale
+- compliance maturity
+- federal experience
+- secure infrastructure
+- support capability
+- uptime capability
+- incident response capability
+- staffing maturity
+- historical operational performance
+
+==================================================
+MISSION-CRITICAL SUPPRESSION RULES
+==================================================
+
+The platform should aggressively suppress opportunities when:
+
+- operational criticality is high
+- trust requirements are high
+- switching cost is extreme
+- user maturity is low
+- past performance is absent
+- incumbent advantage is severe
+
+unless explicitly requested by the user.
+
+==================================================
+EXAMPLE SUPPRESSION RULE
+==================================================
+
+IF:
+- operational_criticality >= 4
+- user_federal_past_performance = 0
+- incumbent_lock_score > 70
+
+THEN:
+- suppress opportunity by default
+- recommend subcontract strategy
+
+==================================================
+TRUST-SENSITIVE SYSTEM DETECTION
+==================================================
+
+The platform should detect keywords and patterns indicating trust-sensitive infrastructure.
+
+EXAMPLES:
+- financial verification
+- identity verification
+- benefits systems
+- payment processing
+- healthcare operations
+- secure communications
+- public safety systems
+- mission operations
+- operational continuity
+
+==================================================
+OPERATIONAL RISK ANALYSIS
+==================================================
+
+The platform should estimate:
+“What happens if the contractor fails?”
+
+LOW RISK:
+- delayed office supplies
+
+HIGH RISK:
+- disrupted financial verification
+- interrupted benefits processing
+- operational outages
+
+==================================================
+SUBCONTRACT FEASIBILITY ENGINE
+==================================================
+
+For mission-critical systems:
+The platform should determine whether:
+- subcontracting is realistic
+- subsystem contribution is realistic
+- teaming opportunities exist
+
+Examples:
+Possible:
+- dashboard subsystem
+- analytics subsystem
+- workflow tooling
+
+Not realistic:
+- replacing nationwide incumbent operational infrastructure directly
+
+==================================================
+EXAMPLE ANALYSIS OUTPUT
+==================================================
+
+{
+  "operational_criticality": "Mission Critical",
+  "trust_requirement_score": 92,
+  "switching_cost": "Extreme",
+  "incumbent_lock_score": 88,
+  "recommended_strategy": "Subcontract Only",
+  "prime_bid_recommended": false,
+  "primary_risks": [
+    "Nationwide operational infrastructure",
+    "High financial systems sensitivity",
+    "Strong incumbent operational trust"
+  ]
+}
+
+==================================================
+WIN PROBABILITY IMPACT
+==================================================
+
+The following should reduce win probability heavily:
+- high operational criticality
+- high switching cost
+- strong incumbent lock
+- high trust requirements
+- low operational maturity
+- lack of federal operational history
+
+==================================================
+IMPORTANT PRODUCT DIFFERENTIATOR
+==================================================
+
+Most procurement platforms do not understand:
+- operational trust
+- switching cost
+- incumbent entrenchment
+- mission criticality
+
+GovSignal AI should understand:
+“How dangerous is this system to replace?”
+
+That is a MASSIVE intelligence advantage.
+
+==================================================
+PLATFORM GOAL
+==================================================
+
+The platform should:
+- protect users from unrealistic pursuits
+- identify high-trust procurement ecosystems
+- identify incumbent-heavy opportunities
+- identify subcontract opportunities
+- estimate operational switching risk
+- guide realistic strategic positioning
+
+==================================================
+FINAL PLATFORM PHILOSOPHY
+==================================================
+
+The platform is NOT intended to:
+- encourage reckless bidding
+- ignore operational realities
+- treat all contracts equally
+
+The platform IS intended to:
+- understand procurement ecosystems deeply
+- evaluate operational trust requirements
+- identify realistic competitive positioning
+- guide strategic maturity progression
+- improve realistic win probability
+
+The platform should function as:
+“AI-assisted operational and procurement risk intelligence”

@@ -31,22 +31,16 @@ export default async function Page() {
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Link
-          href="/dashboard"
+          href="/auth/login"
           className="rounded-full bg-signal px-5 py-2.5 font-medium text-base text-white transition hover:opacity-90"
         >
-          Open dashboard
-        </Link>
-        <Link
-          href="/company-profile"
-          className="rounded-full border border-ink/20 px-5 py-2.5 font-medium text-base transition hover:border-ink/40"
-        >
-          Complete company profile
-        </Link>
-        <Link
-          href="/auth/login"
-          className="rounded-full border border-accent/30 px-5 py-2.5 font-medium text-base text-accent transition hover:bg-accent/10"
-        >
           Sign in
+        </Link>
+        <Link
+          href="/auth/login?intent=signup"
+          className="rounded-full border border-accent bg-accent px-5 py-2.5 font-medium text-base text-white shadow-sm transition hover:opacity-90"
+        >
+          Create account
         </Link>
       </div>
 

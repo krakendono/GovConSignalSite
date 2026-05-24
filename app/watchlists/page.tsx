@@ -214,6 +214,12 @@ export default async function WatchlistsPage({ searchParams }: WatchlistsPagePro
                 <button type="submit" className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
                   {editingWatchlist ? 'Update watchlist' : 'Save watchlist'}
                 </button>
+                <Link
+                  href="/dashboard"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+                >
+                  Back to dashboard
+                </Link>
                 {editingWatchlist ? (
                   <Link
                     href="/watchlists"

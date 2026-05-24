@@ -1,0 +1,621 @@
+==================================================
+MASTER PROMPT
+USASPENDING COMPETITIVE INTELLIGENCE FEATURE
+==================================================
+
+PROJECT CONTEXT:
+We are building GovSignal AI, an AI-assisted procurement intelligence platform.
+
+The platform should help users:
+- find government opportunities
+- filter valid-fit contracts
+- analyze historical award data
+- understand who wins similar contracts
+- estimate price ranges
+- identify incumbents
+- detect competition density
+- build a stronger case for how to win
+
+This feature focuses specifically on using USAspending data to analyze actual federal award history.
+
+==================================================
+PRIMARY OFFICIAL SOURCES
+==================================================
+
+Use these sources as the source of truth:
+
+USAspending API Docs:
+https://api.usaspending.gov/docs/endpoints
+
+USAspending GitHub Repository:
+https://github.com/fedspendingtransparency/usaspending-api
+
+Official facts:
+- USAspending API endpoints do not currently require authorization.
+- The API includes endpoints for awards, recipients, agencies, autocomplete, downloads, bulk downloads, transactions, IDVs, subawards, and spending analysis.
+- The API supports zipped downloads for award, contract, assistance, IDV, transaction, and search data.
+
+Do not invent endpoints.
+Do not invent response fields.
+If unsure, inspect the official docs or repository first.
+
+==================================================
+FEATURE NAME
+==================================================
+
+Competitive Intelligence & Award History Engine
+
+==================================================
+CORE PURPOSE
+==================================================
+
+The feature should answer:
+
+1. Who won similar contracts before?
+2. What did they win for?
+3. How much did they win?
+4. How many offers were received?
+5. Was it competitive or low-competition?
+6. Was there an incumbent?
+7. What agency buys this repeatedly?
+8. What price range usually wins?
+9. What type of company usually wins?
+10. Can this user realistically compete?
+11. If the user loses, why did they likely lose?
+12. What strategy gives the user the best chance next time?
+
+==================================================
+HIGH-LEVEL WORKFLOW
+==================================================
+
+When a new opportunity enters the system:
+
+1. Parse opportunity:
+   - title
+   - agency
+   - office
+   - NAICS
+   - PSC/FSC
+   - place of performance
+   - solicitation type
+   - set-aside
+   - keywords
+   - due date
+   - estimated value if available
+
+2. Query USAspending for similar historical awards using:
+   - NAICS
+   - PSC/FSC
+   - awarding agency
+   - sub-agency
+   - recipient
+   - place of performance
+   - keywords when available
+   - fiscal year/date range
+
+3. Pull historical awards.
+
+4. Normalize award records.
+
+5. Identify:
+   - winners
+   - repeat winners
+   - incumbent patterns
+   - award amounts
+   - competition levels
+   - number of offers
+   - contract vehicles
+   - set-asides
+   - procurement method
+   - award frequency
+
+6. Compare user/company profile against winner patterns.
+
+7. Generate:
+   - competition analysis
+   - price benchmark
+   - incumbent risk
+   - win probability
+   - recommended pursuit strategy
+
+==================================================
+IMPORTANT API ENDPOINT CATEGORIES
+==================================================
+
+Use relevant USAspending endpoints from the official docs.
+
+Key endpoint groups to investigate and use:
+
+1. Award Details
+- /api/v2/awards/<AWARD_ID>/
+
+Purpose:
+Get detailed data for a specific award.
+
+2. Award Search / Spending Search
+Use search/download endpoints where appropriate to retrieve awards by filters.
+
+3. Download Endpoints
+- /api/v2/download/awards/
+- /api/v2/download/contract/
+- /api/v2/download/idv/
+- /api/v2/download/transactions/
+- /api/v2/download/search/
+
+Purpose:
+Generate zipped CSV files for larger award datasets.
+
+4. Bulk Download
+- /api/v2/bulk_download/awards/
+- /api/v2/bulk_download/status/
+
+Purpose:
+Generate larger award downloads for batch intelligence.
+
+5. Autocomplete
+- /api/v2/autocomplete/naics/
+- /api/v2/autocomplete/psc/
+- /api/v2/autocomplete/recipient/
+- /api/v2/autocomplete/awarding_agency/
+- /api/v2/autocomplete/awarding_agency_office/
+
+Purpose:
+Resolve names and codes before searching.
+
+6. Award Counts
+- award count endpoints where useful
+
+Purpose:
+Estimate market size and competition volume.
+
+7. Subaward Data
+Use subaward-related endpoints where available.
+
+Purpose:
+Discover subcontractors and teaming ecosystems.
+
+==================================================
+DATA MODEL
+==================================================
+
+Create database tables for:
+
+historical_awards
+- id
+- award_id
+- generated_unique_award_id
+- piid
+- parent_award_id
+- award_type
+- award_description
+- award_amount
+- total_obligation
+- base_and_exercised_options_value
+- current_total_value_of_award
+- potential_total_value_of_award
+- action_date
+- period_of_performance_start_date
+- period_of_performance_current_end_date
+- awarding_agency
+- awarding_subagency
+- awarding_office
+- funding_agency
+- funding_subagency
+- recipient_name
+- recipient_uei
+- recipient_cage
+- recipient_city
+- recipient_state
+- recipient_country
+- naics_code
+- naics_description
+- psc_code
+- psc_description
+- place_of_performance_city
+- place_of_performance_state
+- place_of_performance_country
+- set_aside_type
+- extent_competed
+- number_of_offers_received
+- solicitation_identifier
+- created_at
+- updated_at
+
+competitor_profiles
+- id
+- recipient_name
+- recipient_uei
+- cage_code
+- total_awards
+- total_obligations
+- average_award_value
+- median_award_value
+- agencies_served
+- top_naics_codes
+- top_psc_codes
+- top_places_of_performance
+- repeat_award_count
+- likely_archetype
+- created_at
+- updated_at
+
+pricing_benchmarks
+- id
+- naics_code
+- psc_code
+- agency
+- keyword_cluster
+- average_award_value
+- median_award_value
+- low_range
+- high_range
+- sample_size
+- confidence_level
+- created_at
+
+incumbent_patterns
+- id
+- agency
+- office
+- naics_code
+- psc_code
+- incumbent_name
+- incumbent_uei
+- repeat_awards
+- repeat_frequency
+- average_award_value
+- incumbent_advantage_score
+- created_at
+
+competition_metrics
+- id
+- opportunity_id
+- historical_sample_size
+- average_offers_received
+- median_offers_received
+- low_competition_count
+- high_competition_count
+- competition_density
+- saturation_level
+- created_at
+
+win_probability_reports
+- id
+- opportunity_id
+- user_company_id
+- technical_fit_score
+- procurement_fit_score
+- maturity_fit_score
+- price_fit_score
+- incumbent_risk_score
+- competition_risk_score
+- final_win_probability
+- recommended_strategy
+- explanation_json
+- created_at
+
+loss_analysis_reports
+- id
+- opportunity_id
+- user_company_id
+- winner_name
+- winning_award_amount
+- user_bid_amount
+- estimated_price_gap
+- likely_loss_reasons
+- recommended_improvements
+- created_at
+
+==================================================
+AWARD MATCHING LOGIC
+==================================================
+
+When matching historical awards to a current opportunity:
+
+Prioritize matches in this order:
+
+1. Same agency + same PSC + same NAICS
+2. Same agency + same PSC
+3. Same agency + same NAICS
+4. Same PSC + same NAICS nationwide
+5. Same keyword cluster + same agency
+6. Same keyword cluster nationwide
+7. Similar product/service category
+
+Return confidence level:
+- High
+- Medium
+- Low
+
+Do not overstate conclusions when sample size is small.
+
+==================================================
+COMPETITOR ARCHETYPE ENGINE
+==================================================
+
+Classify winners into archetypes:
+
+- Federal VAR
+- Commodity Supplier
+- Staffing Agency
+- Defense Prime
+- Technical Boutique
+- Research Contractor
+- Software Integrator
+- Hardware Reseller
+- Logistics Provider
+- Construction Vendor
+- Professional Services Firm
+- Unknown
+
+Use:
+- NAICS
+- PSC
+- award descriptions
+- winner history
+- award size
+- agency pattern
+
+==================================================
+PRICING INTELLIGENCE RULES
+==================================================
+
+Calculate:
+- average award value
+- median award value
+- minimum award value
+- maximum award value
+- common award band
+- likely winning range
+- pricing pressure
+
+Pricing pressure logic:
+- LPTA + many offers = high pricing pressure
+- best value + few offers = moderate pricing pressure
+- sole source / one offer = lower pricing pressure but higher relationship/incumbent risk
+
+Output must include:
+- sample size
+- confidence level
+- caveats
+
+Never guarantee a winning price.
+
+==================================================
+INCUMBENT ANALYSIS RULES
+==================================================
+
+Detect incumbent strength using:
+- repeat winner frequency
+- same agency/office awards
+- recurring descriptions
+- recurring PSC/NAICS
+- recurring timing
+- related award IDs or parent awards
+
+Incumbent Advantage Score:
+0-100
+
+Example:
+- 0-25 = weak incumbent signal
+- 26-50 = moderate incumbent signal
+- 51-75 = strong incumbent signal
+- 76-100 = very strong incumbent lock
+
+==================================================
+COMPETITION DENSITY RULES
+==================================================
+
+Analyze:
+- number_of_offers_received
+- extent_competed
+- set_aside type
+- award frequency
+- number of unique winners
+
+Market labels:
+- Underserved
+- Low Competition
+- Moderate Competition
+- Crowded
+- Incumbent Dominated
+- Enterprise Only
+
+==================================================
+WIN PROBABILITY MODEL
+==================================================
+
+Score from 0-100 using:
+
+- Technical fit: 20
+- Procurement fit: 20
+- Company maturity fit: 15
+- Past performance fit: 15
+- Pricing competitiveness: 15
+- Competition density: 10
+- Incumbent risk: 5
+
+Adjust down if:
+- mandatory certification missing
+- mandatory past performance missing
+- clearance missing
+- OEM authorization required but absent
+- contract vehicle required but absent
+- company maturity far below historical winners
+
+==================================================
+STRATEGY OUTPUT
+==================================================
+
+Recommended strategies:
+
+- Prime Bid
+- Subcontract
+- Teaming Partner
+- Supplier Fulfillment
+- OEM Partnership
+- Avoid
+- Watch Future Recompete
+- Build Past Performance First
+
+==================================================
+EXAMPLE OUTPUT
+==================================================
+
+{
+  "market_summary": {
+    "historical_sample_size": 24,
+    "average_award_value": "$118,000",
+    "median_award_value": "$92,000",
+    "common_winner_type": "Federal VAR",
+    "competition_density": "Low Competition",
+    "incumbent_advantage": "Moderate"
+  },
+  "top_competitors": [
+    {
+      "name": "Example Federal Supply LLC",
+      "awards": 7,
+      "total_obligations": "$840,000",
+      "archetype": "Federal VAR"
+    }
+  ],
+  "pricing_intelligence": {
+    "likely_winning_range": "$85,000-$125,000",
+    "pricing_pressure": "Moderate",
+    "confidence": "Medium"
+  },
+  "win_probability": {
+    "score": 64,
+    "label": "Possible with partner",
+    "recommended_strategy": "Supplier Fulfillment"
+  },
+  "why_user_might_lose": [
+    "No past federal awards in this category",
+    "Competitors have agency-specific history",
+    "Pricing must be close to historical median"
+  ],
+  "recommended_actions": [
+    "Get quotes from 3 suppliers",
+    "Keep margin under 18%",
+    "Confirm COTS exemption",
+    "Build past performance with smaller similar awards"
+  ]
+}
+
+==================================================
+LOSS ANALYSIS FEATURE
+==================================================
+
+When user loses a bid, compare:
+
+- user bid price vs winning amount
+- user maturity vs winner maturity
+- user past performance vs winner history
+- incumbent relationship
+- competition density
+- technical/procurement gaps
+
+Output:
+- likely reasons for loss
+- specific improvements
+- future strategy
+- whether to pursue similar opportunities again
+
+==================================================
+ZIP / BULK FILE SUPPORT
+==================================================
+
+The system should support:
+- uploaded ZIP files
+- USAspending generated ZIP downloads
+- CSV award files
+- contract award exports
+- transaction exports
+- IDV exports
+- subaward exports
+
+Workflow:
+1. Upload ZIP
+2. Extract files
+3. Detect file type
+4. Parse CSV/JSON
+5. Normalize fields
+6. Store in database
+7. Run competitive intelligence analysis
+
+==================================================
+IMPORTANT GUARDRAILS
+==================================================
+
+The AI must not:
+- fabricate award winners
+- fabricate prices
+- fabricate competitor history
+- fabricate bidder counts
+- fabricate incumbent relationships
+- overstate confidence from small samples
+
+The AI must:
+- cite source records internally
+- show sample size
+- show confidence level
+- label estimates clearly
+- distinguish facts from inference
+
+==================================================
+MVP VERSION OF THIS FEATURE
+==================================================
+
+Build only:
+
+1. Search historical awards by:
+   - NAICS
+   - PSC
+   - agency
+   - keyword
+
+2. Show:
+   - top winners
+   - award amounts
+   - award dates
+   - number of offers if available
+   - average award value
+   - median award value
+
+3. Generate:
+   - competition density
+   - pricing benchmark
+   - recommended strategy
+
+Do NOT build advanced ML first.
+
+==================================================
+PHASE 2
+==================================================
+
+Add:
+- incumbent detection
+- competitor profiles
+- contractor archetypes
+- loss analysis
+- CSV/ZIP upload
+
+==================================================
+PHASE 3
+==================================================
+
+Add:
+- recompete prediction
+- subaward ecosystem mapping
+- agency buying behavior
+- market trend dashboards
+
+==================================================
+FINAL PRODUCT PRINCIPLE
+==================================================
+
+The platform should not simply say:
+“Here is an opportunity.”
+
+It should say:
+“Here is the opportunity, here is who usually wins this type of work, here is what they win for, here is the realistic price range, here is your probability of success, and here is the best path to compete.”
