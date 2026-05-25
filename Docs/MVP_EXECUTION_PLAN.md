@@ -22,6 +22,7 @@ Phase 1: Foundation+
 - Dashboard and admin oversight
 - AI summaries
 - Expanded baseline match scoring
+- Notifications for new/high-value matches
 
 ## Build Order Lock
 
@@ -60,9 +61,10 @@ When uncertain or scope expands unexpectedly, return to the current MVP phase an
 - Step 10: Dashboard navigation and opportunity review UX refinements.
 - Step 11: Opportunity summaries persisted and displayed.
 - Step 12: Expanded scoring logic (NAICS + PSC + keywords + preferred agencies + exclusions).
+- Step 13: Notification pipeline for new/high-value matches with in-app inbox.
 - Step 18 (partial): Admin management, audit visibility, searchable/collapsible user views.
 
 ## Next Build Slice
 
-- Step 13: Notifications for high-value/new matches.
 - Step 14: Historical intelligence via Contract Awards API (incumbents, spend patterns, rebid indicators).
+- Step 15: Proposal generation foundation.

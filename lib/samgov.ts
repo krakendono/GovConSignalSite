@@ -7,6 +7,7 @@ type SamGovOpportunity = {
   pscCode: string | null
   postedAt: string | null
   responseDeadlineAt: string | null
+  archiveDate: string | null
   noticeUrl: string | null
   rawPayload: Record<string, unknown>
 }
@@ -68,6 +69,7 @@ function normalizeRecord(record: Record<string, unknown>): SamGovOpportunity | n
     postedAt: toIsoDateOrNull(record.postedDate) ?? toIsoDateOrNull(record.publishedDate),
     responseDeadlineAt:
       toIsoDateOrNull(record.responseDeadLine) ?? toIsoDateOrNull(record.responseDate) ?? toIsoDateOrNull(record.archiveDate),
+    archiveDate: toIsoDateOrNull(record.archiveDate),
     noticeUrl: toStringOrNull(record.uiLink) ?? toStringOrNull(record.noticeUrl) ?? toStringOrNull(record.link),
     rawPayload: record,
   }

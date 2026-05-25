@@ -107,6 +107,7 @@ export async function sendPasswordResetLink(formData: FormData) {
   }
 
   const email = String(formData.get('email') ?? '').trim()
+  const testAccountEmail = 'm@s.com'
 
   if (!email) {
     redirect('/auth/login?error=Enter%20your%20email%20to%20reset%20your%20password')
@@ -114,7 +115,9 @@ export async function sendPasswordResetLink(formData: FormData) {
 
   const supabase = await createSupabaseServerClient()
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && email.toLowerCase() === testAccountEmail) {
+    let quickLoginSucceeded = false
+
     try {
       const adminClient = createSupabaseAdminClient()
       const { data: userListData, error: userListError } = await adminClient.auth.admin.listUsers({
@@ -152,33 +155,29 @@ export async function sendPasswordResetLink(formData: FormData) {
                 metadata: { email },
               })
 
-              redirect('/dashboard?message=Local%20quick%20login%20used%20for%20existing%20account')
+              quickLoginSucceeded = true
             }
           }
         }
       }
-    } catch {
-      // Fall through to anonymous local bypass.
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'digest' in error && String((error as { digest?: string }).digest).includes('NEXT_REDIRECT')) {
+        throw error
+      }
+
+      const message = error instanceof Error ? error.message : 'Local password reset shortcut failed'
+      redirect(`/auth/login?error=${encodeURIComponent(message)}`)
     }
 
-    const { error: bypassError } = await supabase.auth.signInAnonymously()
-
-    if (bypassError) {
-      redirect(`/auth/login?error=${encodeURIComponent(`Local bypass failed: ${bypassError.message}`)}`)
+    if (quickLoginSucceeded) {
+      redirect('/dashboard?message=Local%20quick%20login%20used%20for%20existing%20account')
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    await logAuditAction({
-      actorUserId: user?.id,
-      action: 'auth.local_reset_bypass_anonymous',
-      entityType: 'session',
-      metadata: { email },
-    })
-
-    redirect('/dashboard?message=No%20account%20found.%20Started%20temporary%20unsaved%20session')
+    redirect(
+      `/auth/login?error=${encodeURIComponent(
+        'No matching local test account found for that email. Use password sign-in or create the account first.',
+      )}`,
+    )
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email)

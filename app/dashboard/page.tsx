@@ -24,6 +24,25 @@ export default async function DashboardPage() {
   const showAdminLink = canAccessAdmin(user.email)
   const isTemporarySession = user.is_anonymous
 
+  let unreadNotifications = 0
+  if (!isTemporarySession) {
+    const { data: company } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('owner_user_id', user.id)
+      .maybeSingle()
+
+    if (company) {
+      const { count } = await supabase
+        .from('watchlist_notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', company.id)
+        .eq('is_read', false)
+
+      unreadNotifications = count ?? 0
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f8f5,#ecfdf5)] px-6 py-16">
       <section className="mx-auto max-w-5xl">
@@ -43,40 +62,19 @@ export default async function DashboardPage() {
             Auth is active, company profile intake is available, and watchlists are ready for setup.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/company-profile"
-              className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Open company profile
-            </Link>
-            <Link
-              href="/watchlists"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
-            >
-              Open watchlists
-            </Link>
-            <Link
-              href="/opportunities"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
-            >
-              Open opportunities
-            </Link>
+            <Link href="/company-profile" className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Open company profile</Link>
+            <Link href="/watchlists" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Open watchlists</Link>
+            <Link href="/opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Open opportunities</Link>
+            <Link href="/active-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Active opportunities</Link>
+            <Link href="/closed-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Closed opportunities</Link>
+            <Link href="/taken-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Taken opportunities</Link>
+            <Link href="/notifications" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Notifications {unreadNotifications > 0 ? `(${unreadNotifications})` : ''}</Link>
             {showAdminLink ? (
-              <Link
-                href="/admin"
-                className="rounded-lg border border-accent bg-accent px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-              >
-                Open admin
-              </Link>
+              <Link href="/admin" className="rounded-lg border border-accent bg-accent px-4 py-2 text-sm font-medium text-white transition hover:opacity-90">Open admin</Link>
             ) : null}
           </div>
           <form action={signOut} className="mt-4">
-            <button
-              type="submit"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
-            >
-              Sign out
-            </button>
+            <button type="submit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100">Sign out</button>
           </form>
         </div>
       </section>

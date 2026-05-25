@@ -23,6 +23,24 @@ type MatchCriteria = {
   excludedTerms: string[]
 }
 
+type ExistingMatchRow = {
+  opportunity_id: string
+  match_score: number
+}
+
+type ExistingStatusRow = {
+  opportunity_id: string
+  status: 'active' | 'closed' | 'taken'
+}
+
+type OpportunityStatusRow = {
+  company_id: string
+  opportunity_id: string
+  status: 'active' | 'closed'
+}
+
+const HIGH_MATCH_THRESHOLD = 70
+
 function toLowerUnique(values: string[]) {
   return Array.from(new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean)))
 }
@@ -120,6 +138,99 @@ function safeStringArray(value: unknown) {
   }
 
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
+function deriveAutomaticStatus(postedAt: string | null, responseDeadlineAt: string | null) {
+  const now = Date.now()
+
+  if (responseDeadlineAt) {
+    const deadline = new Date(responseDeadlineAt)
+    if (!Number.isNaN(deadline.getTime())) {
+      if (deadline.getTime() < now) {
+        return {
+          status: 'closed' as const,
+          reason: `Response deadline passed on ${deadline.toLocaleDateString()}`,
+        }
+      }
+
+      return {
+        status: 'active' as const,
+        reason: `Response deadline is still open until ${deadline.toLocaleDateString()}`,
+      }
+    }
+  }
+
+  if (postedAt) {
+    const posted = new Date(postedAt)
+    if (!Number.isNaN(posted.getTime())) {
+      return {
+        status: 'active' as const,
+        reason: `No response deadline available; posted ${posted.toLocaleDateString()} and treated as active while present in SAM.gov`,
+      }
+    }
+  }
+
+  return {
+    status: 'active' as const,
+    reason: 'No response deadline available; treated as active while present in SAM.gov',
+  }
+}
+
+function deriveAutomaticStatusFromSam(record: {
+  postedAt: string | null
+  responseDeadlineAt: string | null
+  archiveDate: string | null
+}) {
+  const now = Date.now()
+
+  if (record.archiveDate) {
+    const archived = new Date(record.archiveDate)
+    if (!Number.isNaN(archived.getTime())) {
+      if (archived.getTime() <= now) {
+        return {
+          status: 'closed' as const,
+          reason: `SAM archive date reached on ${archived.toLocaleDateString()}`,
+        }
+      }
+
+      return {
+        status: 'active' as const,
+        reason: `SAM archive date is set for ${archived.toLocaleDateString()}`,
+      }
+    }
+  }
+
+  if (record.responseDeadlineAt) {
+    const deadline = new Date(record.responseDeadlineAt)
+    if (!Number.isNaN(deadline.getTime())) {
+      if (deadline.getTime() < now) {
+        return {
+          status: 'closed' as const,
+          reason: `Response deadline passed on ${deadline.toLocaleDateString()}`,
+        }
+      }
+
+      return {
+        status: 'active' as const,
+        reason: `Response deadline is still open until ${deadline.toLocaleDateString()}`,
+      }
+    }
+  }
+
+  if (record.postedAt) {
+    const posted = new Date(record.postedAt)
+    if (!Number.isNaN(posted.getTime())) {
+      return {
+        status: 'active' as const,
+        reason: `No response deadline available; posted ${posted.toLocaleDateString()} and treated as active while present in SAM.gov`,
+      }
+    }
+  }
+
+  return {
+    status: 'active' as const,
+    reason: 'No response deadline available; treated as active while present in SAM.gov',
+  }
 }
 
 export async function syncOpportunities() {
@@ -252,13 +363,14 @@ export async function syncOpportunities() {
   const { data: storedRows, error: upsertError } = await supabase
     .from('opportunities')
     .upsert(upsertRows, { onConflict: 'source_notice_id' })
-    .select('id, source_notice_id, title, synopsis, agency, naics_code, psc_code')
+    .select('id, source_notice_id, title, synopsis, agency, naics_code, psc_code, posted_at, response_deadline_at')
 
   if (upsertError) {
     redirect(`/opportunities?error=${encodeURIComponent(upsertError.message)}`)
   }
 
   const byNoticeId = new Map((storedRows ?? []).map((row) => [row.source_notice_id, row]))
+  const storedByOpportunityId = new Map((storedRows ?? []).map((row) => [row.id, row]))
   const fetchedByNoticeId = new Map(opportunities.map((record) => [record.sourceNoticeId, record]))
 
   const summaryRows = (storedRows ?? [])
@@ -294,6 +406,55 @@ export async function syncOpportunities() {
 
     if (summaryError) {
       redirect(`/opportunities?error=${encodeURIComponent(summaryError.message)}`)
+    }
+  }
+
+  const { data: existingMatchesResult } = await supabase
+    .from('opportunity_matches')
+    .select('opportunity_id, match_score')
+    .eq('company_id', company.id)
+
+  const existingMatchScoreByOpportunity = new Map(
+    ((existingMatchesResult ?? []) as ExistingMatchRow[]).map((row) => [row.opportunity_id, Number(row.match_score)]),
+  )
+
+  const { data: existingStatusesResult } = await supabase
+    .from('company_opportunity_statuses')
+    .select('opportunity_id, status')
+    .eq('company_id', company.id)
+
+  const existingStatusByOpportunity = new Map(
+    ((existingStatusesResult ?? []) as ExistingStatusRow[]).map((row) => [row.opportunity_id, row]),
+  )
+
+  const autoStatusRows = opportunities
+    .map((record) => {
+      const stored = byNoticeId.get(record.sourceNoticeId)
+      if (!stored) {
+        return null
+      }
+
+      const automaticStatus = deriveAutomaticStatusFromSam({
+        postedAt: fetchedByNoticeId.get(record.sourceNoticeId)?.postedAt ?? stored.posted_at,
+        responseDeadlineAt: fetchedByNoticeId.get(record.sourceNoticeId)?.responseDeadlineAt ?? stored.response_deadline_at,
+        archiveDate: fetchedByNoticeId.get(record.sourceNoticeId)?.archiveDate ?? null,
+      })
+
+      return {
+        company_id: company.id,
+        opportunity_id: stored.id,
+        status: automaticStatus.status,
+      }
+    })
+    .filter((row): row is OpportunityStatusRow => Boolean(row))
+
+  if (autoStatusRows.length > 0) {
+    const { error: statusError } = await supabase
+      .from('company_opportunity_statuses')
+      .upsert(autoStatusRows, { onConflict: 'company_id,opportunity_id' })
+
+    if (statusError) {
+      redirect(`/opportunities?error=${encodeURIComponent(statusError.message)}`)
     }
   }
 
@@ -336,6 +497,73 @@ export async function syncOpportunities() {
     if (matchError) {
       redirect(`/opportunities?error=${encodeURIComponent(matchError.message)}`)
     }
+
+    const notificationRows = matchRows
+      .map((match) => {
+        const existingScore = existingMatchScoreByOpportunity.get(match.opportunity_id)
+        const isNewMatch = existingScore === undefined
+        const isHighNow = Number(match.match_score) >= HIGH_MATCH_THRESHOLD
+        const wasHighBefore = existingScore !== undefined && existingScore >= HIGH_MATCH_THRESHOLD
+
+        const opportunity = storedByOpportunityId.get(match.opportunity_id)
+        if (!opportunity) {
+          return []
+        }
+
+        const rows: Array<{
+          company_id: string
+          opportunity_id: string
+          notification_type: 'new_match' | 'high_match'
+          title: string
+          body: string
+          is_read: boolean
+          metadata: Record<string, unknown>
+        }> = []
+
+        if (isNewMatch && !isHighNow) {
+          rows.push({
+            company_id: company.id,
+            opportunity_id: match.opportunity_id,
+            notification_type: 'new_match',
+            title: 'New opportunity match',
+            body: `${opportunity.title} matched your current profile/watchlists with score ${Number(match.match_score).toFixed(0)}.`,
+            is_read: false,
+            metadata: {
+              score: Number(match.match_score),
+              sourceNoticeId: opportunity.source_notice_id,
+            },
+          })
+        }
+
+        if (isHighNow && (isNewMatch || !wasHighBefore)) {
+          rows.push({
+            company_id: company.id,
+            opportunity_id: match.opportunity_id,
+            notification_type: 'high_match',
+            title: 'High-value match alert',
+            body: `${opportunity.title} reached score ${Number(match.match_score).toFixed(0)} (threshold ${HIGH_MATCH_THRESHOLD}).`,
+            is_read: false,
+            metadata: {
+              score: Number(match.match_score),
+              threshold: HIGH_MATCH_THRESHOLD,
+              sourceNoticeId: opportunity.source_notice_id,
+            },
+          })
+        }
+
+        return rows
+      })
+      .flat()
+
+    if (notificationRows.length > 0) {
+      const { error: notificationError } = await supabase
+        .from('watchlist_notifications')
+        .upsert(notificationRows, { onConflict: 'company_id,opportunity_id,notification_type' })
+
+      if (notificationError) {
+        redirect(`/opportunities?error=${encodeURIComponent(notificationError.message)}`)
+      }
+    }
   }
 
   await logAuditAction({
@@ -346,6 +574,7 @@ export async function syncOpportunities() {
     metadata: {
       fetchedCount: opportunities.length,
       matchedCount: matchRows.length,
+      highThreshold: HIGH_MATCH_THRESHOLD,
       scoringSignals: {
         naicsCount: criteria.naicsCodes.length,
         pscCount: criteria.pscCodes.length,

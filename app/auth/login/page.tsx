@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import {
-  signInAnonymously,
   sendPasswordResetLink,
-  signInWithMagicLink,
   signInWithPassword,
   signUpWithPassword,
 } from '@/app/auth/login/actions'
@@ -27,15 +25,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <section className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">GovSignal AI</p>
         <h1 className="mt-3 text-2xl font-semibold text-ink">{isSignupIntent ? 'Create account' : 'Sign in'}</h1>
-        <p className="mt-2 text-sm text-slate-600">Use password sign-in for local development or magic link when email is configured.</p>
-        <form action={signInAnonymously} className="mt-5">
-          <button
-            type="submit"
-            className="w-full rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/15"
-          >
-            Continue as test user
-          </button>
-        </form>
+        <p className="mt-2 text-sm text-slate-600">
+          Use password sign-in for local development. Email-based login is not available until an email provider is configured.
+        </p>
+        <Link
+          href="/auth/test-user?email=m%40s.com"
+          className="mt-5 block w-full rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-center text-sm font-medium text-accent transition hover:bg-accent/15"
+        >
+          Continue as m@s.com
+        </Link>
         {message ? (
           <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {message}
@@ -84,16 +82,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 formAction={sendPasswordResetLink}
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                {isLocalBypassMode ? 'Forgot password (local admin bypass)' : 'Forgot password'}
+                {isLocalBypassMode ? 'Recover account (local dev)' : 'Forgot password'}
               </button>
             ) : null}
-            <button
-              type="submit"
-              formAction={signInWithMagicLink}
-              className="w-full rounded-lg border border-accent/30 bg-accent/5 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
-            >
-              Send magic link
-            </button>
           </div>
         </form>
         <p className="mt-4 text-xs text-slate-500">

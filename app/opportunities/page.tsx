@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/env'
 import { syncOpportunities } from '@/app/opportunities/actions'
+import { setOpportunityStatus } from '@/app/opportunity-status/actions'
 
 type OpportunitiesPageProps = {
   searchParams?: Promise<{
@@ -61,6 +62,12 @@ type OpportunitySummaryRow = {
   pursue_steps: string[]
 }
 
+type OpportunityStatusRow = {
+  opportunity_id: string
+  status: 'active' | 'closed' | 'taken'
+  updated_at: string
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return 'N/A'
@@ -74,6 +81,25 @@ function formatDate(value: string | null) {
   return date.toLocaleDateString()
 }
 
+function formatPipelineStatus(statusRow: OpportunityStatusRow | undefined) {
+  if (!statusRow) {
+    return { label: 'Not tracked', tone: 'bg-slate-100 text-slate-700' }
+  }
+
+  const label = statusRow.status === 'active' ? 'Active' : statusRow.status === 'closed' ? 'Closed' : 'Taken'
+  const tone =
+    statusRow.status === 'active'
+      ? 'bg-emerald-50 text-emerald-700'
+      : statusRow.status === 'closed'
+        ? 'bg-amber-50 text-amber-700'
+        : 'bg-signal/10 text-signal'
+
+  return {
+    label,
+    tone,
+  }
+}
+
 function toDetailedBreakdown(reasons: string[], matchScore: number) {
   const alreadyDetailed = reasons.some((reason) => reason.startsWith('Final score:') || reason.startsWith('NAICS:'))
   if (alreadyDetailed) {
@@ -81,7 +107,6 @@ function toDetailedBreakdown(reasons: string[], matchScore: number) {
   }
 
   const lowerReasons = reasons.map((reason) => reason.toLowerCase())
-
   const naicsRaw = reasons.find((reason) => reason.toLowerCase().includes('naics match'))
   const pscRaw = reasons.find((reason) => reason.toLowerCase().includes('psc match'))
   const keywordRaw = reasons.filter((reason) => reason.toLowerCase().includes('keyword'))
@@ -107,31 +132,21 @@ function toDetailedBreakdown(reasons: string[], matchScore: number) {
   keywordPoints = Math.min(keywordPoints, 30)
 
   const fallback = [
-    naicsRaw
-      ? `NAICS: +40 (matched ${naicsMatchedCode ?? 'configured code'})`
-      : 'NAICS: +0 (no code match)',
-    pscRaw
-      ? `PSC: +25 (matched ${pscMatchedCode ?? 'configured code'})`
-      : 'PSC: +0 (no code match)',
+    naicsRaw ? `NAICS: +40 (matched ${naicsMatchedCode ?? 'configured code'})` : 'NAICS: +0 (no code match)',
+    pscRaw ? `PSC: +25 (matched ${pscMatchedCode ?? 'configured code'})` : 'PSC: +0 (no code match)',
     keywordRaw.length > 0
       ? `Keywords: +${keywordPoints} (${keywordRaw.join(' | ')})`
       : 'Keywords: +0 (no keyword hit)',
     preferredAgencyRaw
       ? 'Preferred agency: +12 (matched preferred agency)'
       : 'Preferred agency: +0 (no preferred agency hit)',
-    exclusionRaw
-      ? 'Exclusions: -35 (contains excluded term)'
-      : 'Exclusions: +0 (no exclusion hit)',
+    exclusionRaw ? 'Exclusions: -35 (contains excluded term)' : 'Exclusions: +0 (no exclusion hit)',
     `Final score: ${matchScore.toFixed(0)}/100`,
   ]
 
   const hasSignal = lowerReasons.some(
     (reason) =>
-      reason.includes('naics') ||
-      reason.includes('psc') ||
-      reason.includes('keyword') ||
-      reason.includes('preferred agency') ||
-      reason.includes('excluded'),
+      reason.includes('naics') || reason.includes('psc') || reason.includes('keyword') || reason.includes('preferred agency') || reason.includes('excluded'),
   )
 
   return hasSignal ? fallback : ['Scoring details unavailable for this older match record.', `Final score: ${matchScore.toFixed(0)}/100`]
@@ -234,6 +249,19 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
 
   const summaryByOpportunityId = new Map(summaries.map((summary) => [summary.opportunity_id, summary]))
 
+  let currentStatuses: OpportunityStatusRow[] = []
+  if (allOpportunityIds.length > 0) {
+    const { data: statusResult } = await supabase
+      .from('company_opportunity_statuses')
+      .select('opportunity_id, status, updated_at')
+      .eq('company_id', company.id)
+      .in('opportunity_id', allOpportunityIds)
+
+    currentStatuses = (statusResult ?? []) as OpportunityStatusRow[]
+  }
+
+  const statusByOpportunityId = new Map(currentStatuses.map((status) => [status.opportunity_id, status]))
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f8f5,#eef2ff)] px-6 py-16">
       <section className="mx-auto max-w-6xl">
@@ -242,9 +270,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
         <p className="mt-3 text-slate-700">Sync opportunities and review matches based on your company profile and watchlists.</p>
 
         {message ? (
-          <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-            {message}
-          </p>
+          <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>
         ) : null}
         {error ? (
           <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
@@ -252,19 +278,14 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
 
         <div className="mt-6 flex flex-wrap gap-3">
           <form action={syncOpportunities}>
-            <button
-              type="submit"
-              className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
+            <button type="submit" className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
               Sync opportunities from SAM.gov
             </button>
           </form>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
-          >
-            Back to dashboard
-          </Link>
+          <Link href="/active-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Active opportunities</Link>
+          <Link href="/closed-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Closed opportunities</Link>
+          <Link href="/taken-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Taken opportunities</Link>
+          <Link href="/dashboard" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Back to dashboard</Link>
         </div>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -276,6 +297,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
               matches.map((row) => {
                 const opportunity = row.opportunities
                 const summary = summaryByOpportunityId.get(opportunity.id)
+                const pipelineStatus = formatPipelineStatus(statusByOpportunityId.get(opportunity.id))
                 const breakdown = toDetailedBreakdown(row.match_reason, row.match_score)
 
                 return (
@@ -284,6 +306,9 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       <div>
                         <h3 className="text-lg font-medium text-ink">{opportunity.title}</h3>
                         <p className="text-sm text-slate-600">{opportunity.agency ?? 'Agency not provided'}</p>
+                        <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ${pipelineStatus.tone}`}>
+                          {pipelineStatus.label}
+                        </p>
                       </div>
                       <span className="rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">Match {row.match_score.toFixed(0)}</span>
                     </div>
@@ -313,15 +338,29 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       </div>
                     ) : null}
 
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <form action={setOpportunityStatus}>
+                        <input type="hidden" name="opportunityId" value={opportunity.id} />
+                        <input type="hidden" name="status" value="active" />
+                        <input type="hidden" name="returnTo" value="/opportunities" />
+                        <button type="submit" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 transition hover:bg-slate-50">Mark active</button>
+                      </form>
+                      <form action={setOpportunityStatus}>
+                        <input type="hidden" name="opportunityId" value={opportunity.id} />
+                        <input type="hidden" name="status" value="closed" />
+                        <input type="hidden" name="returnTo" value="/opportunities" />
+                        <button type="submit" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 transition hover:bg-slate-50">Mark closed</button>
+                      </form>
+                      <form action={setOpportunityStatus}>
+                        <input type="hidden" name="opportunityId" value={opportunity.id} />
+                        <input type="hidden" name="status" value="taken" />
+                        <input type="hidden" name="returnTo" value="/opportunities" />
+                        <button type="submit" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700">Mark taken</button>
+                      </form>
+                    </div>
+
                     {opportunity.notice_url ? (
-                      <a
-                        href={opportunity.notice_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-block text-sm font-medium text-signal hover:underline"
-                      >
-                        Open notice
-                      </a>
+                      <a href={opportunity.notice_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-medium text-signal hover:underline">Open notice</a>
                     ) : null}
                   </article>
                 )
@@ -342,6 +381,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
               allOpportunities.map((opportunity) => {
                 const match = matchByOpportunityId.get(opportunity.id)
                 const summary = summaryByOpportunityId.get(opportunity.id)
+                const pipelineStatus = formatPipelineStatus(statusByOpportunityId.get(opportunity.id))
                 const breakdown = match ? toDetailedBreakdown(match.reasons, match.matchScore) : []
 
                 return (
@@ -350,14 +390,11 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       <div>
                         <h3 className="text-lg font-medium text-ink">{opportunity.title}</h3>
                         <p className="text-sm text-slate-600">{opportunity.agency ?? 'Agency not provided'}</p>
+                        <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-medium ${pipelineStatus.tone}`}>
+                          {pipelineStatus.label}
+                        </p>
                       </div>
-                      <span
-                        className={
-                          match
-                            ? 'rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent'
-                            : 'rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700'
-                        }
-                      >
+                      <span className={match ? 'rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent' : 'rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700'}>
                         {match ? `Matched ${match.matchScore.toFixed(0)}` : 'Manual review'}
                       </span>
                     </div>
@@ -395,15 +432,29 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       <p className="mt-2 text-xs text-slate-600">Pursue steps: {summary.pursue_steps.join(' | ')}</p>
                     ) : null}
 
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <form action={setOpportunityStatus}>
+                        <input type="hidden" name="opportunityId" value={opportunity.id} />
+                        <input type="hidden" name="status" value="active" />
+                        <input type="hidden" name="returnTo" value="/opportunities" />
+                        <button type="submit" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 transition hover:bg-slate-50">Set active</button>
+                      </form>
+                      <form action={setOpportunityStatus}>
+                        <input type="hidden" name="opportunityId" value={opportunity.id} />
+                        <input type="hidden" name="status" value="closed" />
+                        <input type="hidden" name="returnTo" value="/opportunities" />
+                        <button type="submit" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 transition hover:bg-slate-50">Set closed</button>
+                      </form>
+                      <form action={setOpportunityStatus}>
+                        <input type="hidden" name="opportunityId" value={opportunity.id} />
+                        <input type="hidden" name="status" value="taken" />
+                        <input type="hidden" name="returnTo" value="/opportunities" />
+                        <button type="submit" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700">Set taken</button>
+                      </form>
+                    </div>
+
                     {opportunity.notice_url ? (
-                      <a
-                        href={opportunity.notice_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-block text-sm font-medium text-signal hover:underline"
-                      >
-                        Open notice
-                      </a>
+                      <a href={opportunity.notice_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-medium text-signal hover:underline">Open notice</a>
                     ) : null}
                   </article>
                 )
