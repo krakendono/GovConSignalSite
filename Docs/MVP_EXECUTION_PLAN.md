@@ -13,14 +13,15 @@ This plan is derived from `Docs/Master Prompt Government Contracting.txt` and is
 
 ## Current Build Phase
 
-Phase 1: Foundation
+Phase 1: Foundation+
 
 - Auth
 - Company profiles
 - NAICS/PSC storage
-- Opportunities ingestion
-- Dashboard
-- Basic filtering
+- Opportunities ingestion and storage
+- Dashboard and admin oversight
+- AI summaries
+- Expanded baseline match scoring
 
 ## Build Order Lock
 
@@ -50,15 +51,18 @@ When uncertain or scope expands unexpectedly, return to the current MVP phase an
 ## Delivered So Far
 
 - Step 3: Supabase foundation with server/client helpers and env scaffolding.
-- Step 4: Auth scaffold (magic-link login, callback, protected dashboard).
+- Step 4: Auth scaffold (password + magic-link + local development fallback flows, callback, protected dashboard).
 - Step 5: Database schema migration for users, companies, company_profiles, NAICS/PSC tables, and RLS policies.
-- Step 6 (started): Company profile intake page with save action and NAICS/PSC mapping persistence.
-- Step 7 (delivered): Watchlists tables, watchlist creation page, and delete flow.
-- Step 8 (delivered): SAM.gov opportunities sync endpoint integration.
-- Step 9 (delivered): Opportunity storage and basic company/watchlist match persistence.
+- Step 6: Company profile intake page with save action and NAICS/PSC mapping persistence.
+- Step 7: Watchlists tables, create/edit/delete flow, and validation.
+- Step 8: SAM.gov opportunities sync endpoint integration.
+- Step 9: Opportunity storage and company/watchlist match persistence.
+- Step 10: Dashboard navigation and opportunity review UX refinements.
+- Step 11: Opportunity summaries persisted and displayed.
+- Step 12: Expanded scoring logic (NAICS + PSC + keywords + preferred agencies + exclusions).
+- Step 18 (partial): Admin management, audit visibility, searchable/collapsible user views.
 
 ## Next Build Slice
 
-- Opportunity dashboard refinements and ranking UX.
-- AI summaries over synced opportunities.
-- Expanded match scoring logic.
+- Step 13: Notifications for high-value/new matches.
+- Step 14: Historical intelligence via Contract Awards API (incumbents, spend patterns, rebid indicators).
