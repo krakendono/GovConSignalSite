@@ -129,6 +129,7 @@ export default async function TakenOpportunitiesPage({ searchParams }: TakenOppo
           <Link href="/opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Open opportunities</Link>
           <Link href="/active-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Active opportunities</Link>
           <Link href="/closed-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Closed opportunities</Link>
+          <Link href="/dashboard" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Back to dashboard</Link>
         </div>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -149,6 +150,9 @@ export default async function TakenOpportunitiesPage({ searchParams }: TakenOppo
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <Link href={`/proposal-prep/${row.opportunity_id}`} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100">
+                      Proposal workspace
+                    </Link>
                     <form action={setOpportunityStatus}>
                       <input type="hidden" name="opportunityId" value={row.opportunity_id} />
                       <input type="hidden" name="status" value="active" />

@@ -91,6 +91,32 @@ type OpportunityMatch = {
       }[]
 }
 
+type JoinedOpportunity = {
+  id: string
+  title: string
+  source_notice_id: string
+  agency: string | null
+}
+
+type ProposalDraftRow = {
+  company_id: string
+  opportunity_id: string
+  export_ready: boolean
+  created_at: string
+  updated_at: string
+  opportunities: JoinedOpportunity | JoinedOpportunity[]
+}
+
+type CompanyOpportunityStatusRow = {
+  company_id: string
+  opportunity_id: string
+  status: 'active' | 'closed' | 'taken'
+  status_source: 'manual' | 'sync'
+  status_reason: string | null
+  updated_at: string
+  opportunities: JoinedOpportunity | JoinedOpportunity[]
+}
+
 type AuditLog = {
   id: string
   actor_user_id: string | null
@@ -102,8 +128,37 @@ type AuditLog = {
   created_at: string
 }
 
+type UsageEvent = {
+  id: number
+  actor_user_id: string | null
+  company_id: string | null
+  opportunity_id: string | null
+  action: string
+  provider: string | null
+  model: string | null
+  status: 'success' | 'error'
+  duration_ms: number | null
+  input_tokens: number | null
+  output_tokens: number | null
+  total_tokens: number | null
+  estimated_cost_usd: number | null
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString()
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
 }
 
 function toDetailedBreakdown(reasons: string[], matchScore: number) {
@@ -202,6 +257,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     companiesResult,
     statusesResult,
     logsResult,
+    usageEventsResult,
     watchlistsResult,
     watchlistKeywordsResult,
     watchlistNaicsResult,
@@ -209,6 +265,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     watchlistExclusionsResult,
     companyNaicsResult,
     opportunityMatchesResult,
+    proposalDraftsResult,
+    opportunityStatusesResult,
+    takenOpportunityStatusesResult,
   ] = await Promise.all([
     adminClient.from('users').select('id, created_at, primary_company_id').order('created_at', { ascending: false }),
     adminClient.from('companies').select('id, name, owner_user_id'),
@@ -218,6 +277,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       .select('id, actor_user_id, target_user_id, action, entity_type, entity_id, metadata, created_at')
       .order('created_at', { ascending: false })
       .limit(50),
+    adminClient
+      .from('usage_events')
+      .select(
+        'id, actor_user_id, company_id, opportunity_id, action, provider, model, status, duration_ms, input_tokens, output_tokens, total_tokens, estimated_cost_usd, metadata, created_at',
+      )
+      .order('created_at', { ascending: false })
+      .limit(3000),
     adminClient
       .from('watchlists')
       .select('id, company_id, name, is_active, created_at')
@@ -234,12 +300,29 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       )
       .order('created_at', { ascending: false })
       .limit(300),
+    adminClient
+      .from('proposal_drafts')
+      .select('company_id, opportunity_id, export_ready, created_at, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+      .order('updated_at', { ascending: false })
+      .limit(500),
+    adminClient
+      .from('company_opportunity_statuses')
+      .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+      .order('updated_at', { ascending: false })
+      .limit(1000),
+    adminClient
+      .from('company_opportunity_statuses')
+      .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+      .eq('status', 'taken')
+      .order('updated_at', { ascending: false })
+      .limit(5000),
   ])
 
   const users = (usersResult.data ?? []) as PublicUser[]
   const companies = (companiesResult.data ?? []) as Company[]
   const statuses = (statusesResult.data ?? []) as UserStatus[]
   const logs = (logsResult.data ?? []) as AuditLog[]
+  const usageEvents = (usageEventsResult.data ?? []) as UsageEvent[]
   const watchlists = (watchlistsResult.data ?? []) as Watchlist[]
   const watchlistKeywords = (watchlistKeywordsResult.data ?? []) as WatchlistKeyword[]
   const watchlistNaics = (watchlistNaicsResult.data ?? []) as WatchlistNaics[]
@@ -247,10 +330,42 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const watchlistExclusions = (watchlistExclusionsResult.data ?? []) as WatchlistExclusion[]
   const companyNaics = (companyNaicsResult.data ?? []) as CompanyNaics[]
   const opportunityMatchesRaw = (opportunityMatchesResult.data ?? []) as OpportunityMatch[]
+  const proposalDraftsRaw = (proposalDraftsResult.data ?? []) as ProposalDraftRow[]
+  let opportunityStatusesRaw = (opportunityStatusesResult.data ?? []) as CompanyOpportunityStatusRow[]
+  let takenOpportunityStatusesRaw = (takenOpportunityStatusesResult.data ?? []) as CompanyOpportunityStatusRow[]
 
-  const companyByOwner = new Map<string, Company>()
+  const companyIds = companies.map((company) => company.id)
+  if (companyIds.length > 0) {
+    const [scopedStatusesResult, scopedTakenStatusesResult] = await Promise.all([
+      adminClient
+        .from('company_opportunity_statuses')
+        .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+        .in('company_id', companyIds)
+        .order('updated_at', { ascending: false })
+        .limit(10000),
+      adminClient
+        .from('company_opportunity_statuses')
+        .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+        .in('company_id', companyIds)
+        .eq('status', 'taken')
+        .order('updated_at', { ascending: false })
+        .limit(10000),
+    ])
+
+    if (scopedStatusesResult.data) {
+      opportunityStatusesRaw = scopedStatusesResult.data as CompanyOpportunityStatusRow[]
+    }
+
+    if (scopedTakenStatusesResult.data) {
+      takenOpportunityStatusesRaw = scopedTakenStatusesResult.data as CompanyOpportunityStatusRow[]
+    }
+  }
+
+  const companiesByOwner = new Map<string, Company[]>()
   companies.forEach((company) => {
-    companyByOwner.set(company.owner_user_id, company)
+    const existing = companiesByOwner.get(company.owner_user_id) ?? []
+    existing.push(company)
+    companiesByOwner.set(company.owner_user_id, existing)
   })
 
   const statusByUser = new Map<string, UserStatus>()
@@ -346,17 +461,193 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     matchesByCompany.set(match.company_id, existing)
   })
 
+  const proposalDrafts = proposalDraftsRaw
+    .map((row) => {
+      const opportunity = Array.isArray(row.opportunities) ? row.opportunities[0] : row.opportunities
+      if (!opportunity) {
+        return null
+      }
+
+      return {
+        ...row,
+        opportunities: opportunity,
+      }
+    })
+    .filter(
+      (row): row is Omit<ProposalDraftRow, 'opportunities'> & { opportunities: JoinedOpportunity } => Boolean(row),
+    )
+
+  const proposalDraftsByCompany = new Map<string, typeof proposalDrafts>()
+  proposalDrafts.forEach((draft) => {
+    const existing = proposalDraftsByCompany.get(draft.company_id) ?? []
+    existing.push(draft)
+    proposalDraftsByCompany.set(draft.company_id, existing)
+  })
+
+  const opportunityStatuses = opportunityStatusesRaw
+    .map((row) => {
+      const opportunity = Array.isArray(row.opportunities) ? row.opportunities[0] : row.opportunities
+      if (!opportunity) {
+        return null
+      }
+
+      return {
+        ...row,
+        opportunities: opportunity,
+      }
+    })
+    .filter(
+      (row): row is Omit<CompanyOpportunityStatusRow, 'opportunities'> & { opportunities: JoinedOpportunity } => Boolean(row),
+    )
+
+  const statusesByCompany = new Map<string, typeof opportunityStatuses>()
+  const statusByCompanyOpportunity = new Map<string, (typeof opportunityStatuses)[number]>()
+  opportunityStatuses.forEach((status) => {
+    const existing = statusesByCompany.get(status.company_id) ?? []
+    existing.push(status)
+    statusesByCompany.set(status.company_id, existing)
+    statusByCompanyOpportunity.set(`${status.company_id}:${status.opportunity_id}`, status)
+  })
+
+  const takenOpportunityStatuses = takenOpportunityStatusesRaw
+    .map((row) => {
+      const opportunity = Array.isArray(row.opportunities) ? row.opportunities[0] : row.opportunities
+      if (!opportunity) {
+        return null
+      }
+
+      return {
+        ...row,
+        opportunities: opportunity,
+      }
+    })
+    .filter(
+      (row): row is Omit<CompanyOpportunityStatusRow, 'opportunities'> & { opportunities: JoinedOpportunity } => Boolean(row),
+    )
+
+  const takenStatusesByCompany = new Map<string, typeof takenOpportunityStatuses>()
+  takenOpportunityStatuses.forEach((status) => {
+    const existing = takenStatusesByCompany.get(status.company_id) ?? []
+    existing.push(status)
+    takenStatusesByCompany.set(status.company_id, existing)
+  })
+
   const filteredUsers = users.filter((record) => {
     if (!normalizedSearchQuery) {
       return true
     }
 
-    const company = companyByOwner.get(record.id)
-    const companyName = company?.name ?? ''
-    const naicsCodes = company ? Array.from(targetedNaicsByCompany.get(company.id) ?? new Set<string>()) : []
+    const ownerCompanies = companiesByOwner.get(record.id) ?? []
+    const companyNames = ownerCompanies.map((company) => company.name)
+    const naicsCodes = Array.from(
+      ownerCompanies.reduce((accumulator, company) => {
+        const codes = targetedNaicsByCompany.get(company.id) ?? new Set<string>()
+        codes.forEach((code) => accumulator.add(code))
+        return accumulator
+      }, new Set<string>()),
+    )
 
-    const searchableParts = [record.id, companyName, ...naicsCodes].map((value) => value.toLowerCase())
+    const searchableParts = [record.id, ...companyNames, ...naicsCodes].map((value) => value.toLowerCase())
     return searchableParts.some((value) => value.includes(normalizedSearchQuery))
+  })
+
+  const now = Date.now()
+  const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000
+
+  let samPullsLast7d = 0
+  let samPullsLast30d = 0
+  let samPullFailuresLast30d = 0
+  let samRecordsFetchedLast30d = 0
+  let aiCallsLast7d = 0
+  let aiCallsLast30d = 0
+  let aiDurationMsLast30d = 0
+  let aiInputTokensLast30d = 0
+  let aiOutputTokensLast30d = 0
+  let aiTotalTokensLast30d = 0
+  let aiEstimatedCostLast30d = 0
+
+  const samPullsByActor = new Map<string, number>()
+  const aiCallsByActor = new Map<string, number>()
+  const aiCallsByAction = new Map<string, number>()
+  const aiCallsByProviderModel = new Map<string, number>()
+
+  usageEvents.forEach((event) => {
+    const createdAtMs = Date.parse(event.created_at)
+    if (Number.isNaN(createdAtMs)) {
+      return
+    }
+
+    const isLast7d = createdAtMs >= sevenDaysAgo
+    const isLast30d = createdAtMs >= thirtyDaysAgo
+    const actor = event.actor_user_id ?? 'system'
+
+    if (event.action === 'sam.api_pull') {
+      const isFailedPull = event.status === 'error'
+      if (isLast7d) {
+        samPullsLast7d += 1
+      }
+      if (isLast30d) {
+        samPullsLast30d += 1
+        if (isFailedPull) {
+          samPullFailuresLast30d += 1
+        } else {
+          samRecordsFetchedLast30d += toNumber(event.metadata?.opportunitiesFetched)
+        }
+      }
+      samPullsByActor.set(actor, (samPullsByActor.get(actor) ?? 0) + 1)
+      return
+    }
+
+    if (event.action.startsWith('ai.')) {
+      if (isLast7d) {
+        aiCallsLast7d += 1
+      }
+      if (isLast30d) {
+        aiCallsLast30d += 1
+        aiDurationMsLast30d += toNumber(event.duration_ms)
+        aiInputTokensLast30d += toNumber(event.input_tokens)
+        aiOutputTokensLast30d += toNumber(event.output_tokens)
+        aiTotalTokensLast30d += toNumber(event.total_tokens)
+        aiEstimatedCostLast30d += toNumber(event.estimated_cost_usd)
+      }
+      aiCallsByActor.set(actor, (aiCallsByActor.get(actor) ?? 0) + 1)
+      aiCallsByAction.set(event.action, (aiCallsByAction.get(event.action) ?? 0) + 1)
+
+      const provider = event.provider ?? 'unknown-provider'
+      const model = event.model ?? 'unknown-model'
+      const key = `${provider} / ${model}`
+      aiCallsByProviderModel.set(key, (aiCallsByProviderModel.get(key) ?? 0) + 1)
+    }
+  })
+
+  const topSamActors = Array.from(samPullsByActor.entries())
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 5)
+
+  const topAiActors = Array.from(aiCallsByActor.entries())
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 5)
+
+  const aiActionBreakdown = Array.from(aiCallsByAction.entries()).sort((left, right) => right[1] - left[1])
+  const aiProviderModelBreakdown = Array.from(aiCallsByProviderModel.entries()).sort((left, right) => right[1] - left[1])
+
+  const mostRecentLogs = logs.slice(0, 3)
+  const olderLogs = logs.slice(3)
+
+  const aiGeneratedProposalKeys = new Set<string>()
+  usageEvents.forEach((event) => {
+    if (event.action !== 'ai.proposal_draft' || event.status !== 'success') {
+      return
+    }
+
+    const companyId = event.company_id
+    const opportunityId = event.opportunity_id
+    if (!companyId || !opportunityId) {
+      return
+    }
+
+    aiGeneratedProposalKeys.add(`${companyId}:${opportunityId}`)
   })
 
   return (
@@ -419,13 +710,41 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <p className="text-sm text-slate-600">No users found for this search.</p>
               ) : (
                 filteredUsers.map((record) => {
-                  const company = companyByOwner.get(record.id)
+                  const ownerCompanies = companiesByOwner.get(record.id) ?? []
+                  const primaryCompany =
+                    ownerCompanies.find((company) => company.id === record.primary_company_id) ?? ownerCompanies[0] ?? null
+                  const ownerCompanyIds = ownerCompanies.map((company) => company.id)
                   const status = statusByUser.get(record.id)
-                  const companyWatchlists = company ? (watchlistsByCompany.get(company.id) ?? []) : []
-                  const companyMatches = company ? (matchesByCompany.get(company.id) ?? []) : []
-                  const targetedNaics = company
-                    ? Array.from(targetedNaicsByCompany.get(company.id) ?? new Set<string>()).sort()
-                    : []
+                  const companyWatchlists = ownerCompanyIds.flatMap((companyId) => watchlistsByCompany.get(companyId) ?? [])
+                  const companyMatches = ownerCompanyIds.flatMap((companyId) => matchesByCompany.get(companyId) ?? [])
+                  const companyProposalDrafts = ownerCompanyIds.flatMap((companyId) => proposalDraftsByCompany.get(companyId) ?? [])
+                  const companyContractStatuses = ownerCompanyIds.flatMap((companyId) => statusesByCompany.get(companyId) ?? [])
+                  const companyTakenContracts = ownerCompanyIds.flatMap((companyId) => takenStatusesByCompany.get(companyId) ?? [])
+                  const targetedNaics = Array.from(
+                    ownerCompanyIds.reduce((accumulator, companyId) => {
+                      const codes = targetedNaicsByCompany.get(companyId) ?? new Set<string>()
+                      codes.forEach((code) => accumulator.add(code))
+                      return accumulator
+                    }, new Set<string>()),
+                  ).sort()
+
+                  const placementCounts = companyContractStatuses.reduce(
+                    (accumulator, item) => {
+                      if (item.status === 'active') {
+                        accumulator.active += 1
+                      }
+                      if (item.status === 'taken') {
+                        accumulator.taken += 1
+                      }
+                      if (item.status === 'closed') {
+                        accumulator.closed += 1
+                      }
+                      return accumulator
+                    },
+                    { active: 0, taken: 0, closed: 0 },
+                  )
+                  const takenContracts = companyTakenContracts
+                  placementCounts.taken = companyTakenContracts.length
 
                   return (
                     <details key={record.id} className="rounded-xl border border-slate-200 p-4">
@@ -434,7 +753,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           <div>
                             <p className="text-xs text-slate-500">User ID</p>
                             <p className="break-all text-sm font-medium text-ink">{record.id}</p>
-                            <p className="mt-1 text-sm text-slate-700">Company: {company?.name ?? 'No company yet'}</p>
+                            <p className="mt-1 text-sm text-slate-700">
+                              Company: {primaryCompany?.name ?? 'No company yet'}
+                              {ownerCompanies.length > 1 ? ` (+${ownerCompanies.length - 1} more)` : ''}
+                            </p>
                             <p className="text-sm text-slate-700">
                               Status: <span className="font-medium">{status?.account_status ?? 'active'}</span>
                             </p>
@@ -540,6 +862,110 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                         )}
                       </div>
 
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-sm font-medium text-slate-800">Proposal workspaces</p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          {companyProposalDrafts.length} proposal drafts, {companyProposalDrafts.filter((draft) => draft.export_ready).length}{' '}
+                          marked export-ready
+                        </p>
+                        {companyProposalDrafts.length === 0 ? (
+                          <p className="mt-1 text-sm text-slate-600">No proposal drafts created yet.</p>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            {companyProposalDrafts.slice(0, 20).map((draft) => {
+                              const statusForOpportunity = statusByCompanyOpportunity.get(
+                                `${draft.company_id}:${draft.opportunity_id}`,
+                              )
+                              const generatedByAi = aiGeneratedProposalKeys.has(`${draft.company_id}:${draft.opportunity_id}`)
+
+                              return (
+                                <details
+                                  key={`${draft.company_id}:${draft.opportunity_id}`}
+                                  className="rounded-lg border border-slate-200 bg-white p-2"
+                                >
+                                  <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                                    {draft.opportunities.title}
+                                  </summary>
+                                  <div className="mt-2 space-y-1 text-xs text-slate-600">
+                                    <p>Notice ID: {draft.opportunities.source_notice_id}</p>
+                                    <p>Agency: {draft.opportunities.agency ?? 'N/A'}</p>
+                                    <p>Updated: {formatDate(draft.updated_at)}</p>
+                                    <p>Created: {formatDate(draft.created_at)}</p>
+                                    <p>Draft source: {generatedByAi ? 'AI-generated' : 'manual/unknown'}</p>
+                                    <p>Export ready: {draft.export_ready ? 'yes' : 'no'}</p>
+                                    <p>
+                                      Pipeline placement: {statusForOpportunity?.status ?? 'not set'}
+                                      {statusForOpportunity?.status_source ? ` (${statusForOpportunity.status_source})` : ''}
+                                    </p>
+                                    {statusForOpportunity?.status_reason ? (
+                                      <p>Placement reason: {statusForOpportunity.status_reason}</p>
+                                    ) : null}
+                                  </div>
+                                </details>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-sm font-medium text-slate-800">Taken contracts</p>
+                        <p className="mt-1 text-xs text-slate-600">{takenContracts.length} currently marked as taken.</p>
+                        {takenContracts.length === 0 ? (
+                          <p className="mt-1 text-sm text-slate-600">No taken contracts recorded yet.</p>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            {takenContracts.slice(0, 20).map((taken) => (
+                              <details
+                                key={`${taken.company_id}:${taken.opportunity_id}:taken`}
+                                className="rounded-lg border border-slate-200 bg-white p-2"
+                              >
+                                <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                                  {taken.opportunities.title}
+                                </summary>
+                                <div className="mt-2 space-y-1 text-xs text-slate-600">
+                                  <p>Notice ID: {taken.opportunities.source_notice_id}</p>
+                                  <p>Agency: {taken.opportunities.agency ?? 'N/A'}</p>
+                                  <p>Placement source: {taken.status_source}</p>
+                                  <p>Updated: {formatDate(taken.updated_at)}</p>
+                                  {taken.status_reason ? <p>Reason: {taken.status_reason}</p> : null}
+                                </div>
+                              </details>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-sm font-medium text-slate-800">Contract placement summary</p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          Active: {placementCounts.active} | Taken: {placementCounts.taken} | Closed: {placementCounts.closed}
+                        </p>
+                        {companyContractStatuses.length === 0 ? (
+                          <p className="mt-1 text-sm text-slate-600">No contract placement status records yet.</p>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            {companyContractStatuses.slice(0, 20).map((contractStatus) => (
+                              <details
+                                key={`${contractStatus.company_id}:${contractStatus.opportunity_id}:status`}
+                                className="rounded-lg border border-slate-200 bg-white p-2"
+                              >
+                                <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                                  {contractStatus.opportunities.title} ({contractStatus.status})
+                                </summary>
+                                <div className="mt-2 space-y-1 text-xs text-slate-600">
+                                  <p>Notice ID: {contractStatus.opportunities.source_notice_id}</p>
+                                  <p>Agency: {contractStatus.opportunities.agency ?? 'N/A'}</p>
+                                  <p>Placement source: {contractStatus.status_source}</p>
+                                  <p>Updated: {formatDate(contractStatus.updated_at)}</p>
+                                  {contractStatus.status_reason ? <p>Reason: {contractStatus.status_reason}</p> : null}
+                                </div>
+                              </details>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
                       <form action={updateUserAccountStatus} className="mt-4 space-y-2">
                         <input type="hidden" name="targetUserId" value={record.id} />
                         <select
@@ -572,26 +998,139 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-ink">Usage telemetry</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">SAM pulls</p>
+                <p className="mt-1 text-xl font-semibold text-ink">{samPullsLast7d} (7d)</p>
+                <p className="text-xs text-slate-600">
+                  {samPullsLast30d} in 30d, {samPullFailuresLast30d} failures, {samRecordsFetchedLast30d} records fetched
+                </p>
+              </article>
+              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">AI calls</p>
+                <p className="mt-1 text-xl font-semibold text-ink">{aiCallsLast7d} (7d)</p>
+                <p className="text-xs text-slate-600">{aiCallsLast30d} in 30d</p>
+              </article>
+            </div>
+
+            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">AI usage totals (30d)</p>
+              <p className="mt-1 text-sm text-slate-700">
+                Duration: {Math.round(aiDurationMsLast30d / 1000)}s | Tokens in/out/total: {aiInputTokensLast30d}/{aiOutputTokensLast30d}/
+                {aiTotalTokensLast30d} | Estimated cost: ${aiEstimatedCostLast30d.toFixed(4)}
+              </p>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-slate-200 p-3">
+              <p className="text-sm font-medium text-slate-800">Top SAM pull actors</p>
+              {topSamActors.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-600">No SAM pull activity recorded yet.</p>
+              ) : (
+                <div className="mt-2 space-y-1">
+                  {topSamActors.map(([actorId, count]) => (
+                    <p key={`sam:${actorId}`} className="break-all text-xs text-slate-600">
+                      {actorId}: {count}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-slate-200 p-3">
+              <p className="text-sm font-medium text-slate-800">Top AI actors</p>
+              {topAiActors.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-600">No AI activity recorded yet.</p>
+              ) : (
+                <div className="mt-2 space-y-1">
+                  {topAiActors.map(([actorId, count]) => (
+                    <p key={`ai:${actorId}`} className="break-all text-xs text-slate-600">
+                      {actorId}: {count}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-slate-200 p-3">
+              <p className="text-sm font-medium text-slate-800">AI provider/model breakdown</p>
+              {aiProviderModelBreakdown.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-600">No provider/model usage captured yet.</p>
+              ) : (
+                <div className="mt-2 space-y-1">
+                  {aiProviderModelBreakdown.map(([providerModel, count]) => (
+                    <p key={providerModel} className="break-all text-xs text-slate-600">
+                      {providerModel}: {count}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-slate-200 p-3">
+              <p className="text-sm font-medium text-slate-800">AI action breakdown</p>
+              {aiActionBreakdown.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-600">No AI action events captured yet.</p>
+              ) : (
+                <div className="mt-2 space-y-1">
+                  {aiActionBreakdown.map(([action, count]) => (
+                    <p key={action} className="break-all text-xs text-slate-600">
+                      {action}: {count}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-ink">Recent actions</h2>
             <div className="mt-4 space-y-3">
               {logs.length === 0 ? (
                 <p className="text-sm text-slate-600">No actions recorded yet.</p>
               ) : (
-                logs.map((log) => (
-                  <article key={log.id} className="rounded-lg border border-slate-200 p-3">
-                    <p className="text-sm font-medium text-ink">{log.action}</p>
-                    <p className="text-xs text-slate-500">{formatDate(log.created_at)}</p>
-                    <p className="mt-1 break-all text-xs text-slate-600">Actor: {log.actor_user_id ?? 'system'}</p>
-                    {log.target_user_id ? (
-                      <p className="break-all text-xs text-slate-600">Target: {log.target_user_id}</p>
-                    ) : null}
-                    {log.entity_type || log.entity_id ? (
-                      <p className="break-all text-xs text-slate-600">
-                        Entity: {[log.entity_type, log.entity_id].filter(Boolean).join(':')}
-                      </p>
-                    ) : null}
-                  </article>
-                ))
+                <>
+                  {mostRecentLogs.map((log) => (
+                    <article key={log.id} className="rounded-lg border border-slate-200 p-3">
+                      <p className="text-sm font-medium text-ink">{log.action}</p>
+                      <p className="text-xs text-slate-500">{formatDate(log.created_at)}</p>
+                      <p className="mt-1 break-all text-xs text-slate-600">Actor: {log.actor_user_id ?? 'system'}</p>
+                      {log.target_user_id ? (
+                        <p className="break-all text-xs text-slate-600">Target: {log.target_user_id}</p>
+                      ) : null}
+                      {log.entity_type || log.entity_id ? (
+                        <p className="break-all text-xs text-slate-600">
+                          Entity: {[log.entity_type, log.entity_id].filter(Boolean).join(':')}
+                        </p>
+                      ) : null}
+                    </article>
+                  ))}
+
+                  {olderLogs.length > 0 ? (
+                    <details className="rounded-lg border border-slate-200 p-3">
+                      <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                        Show older actions ({olderLogs.length})
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                        {olderLogs.map((log) => (
+                          <article key={log.id} className="rounded-lg border border-slate-200 p-3">
+                            <p className="text-sm font-medium text-ink">{log.action}</p>
+                            <p className="text-xs text-slate-500">{formatDate(log.created_at)}</p>
+                            <p className="mt-1 break-all text-xs text-slate-600">Actor: {log.actor_user_id ?? 'system'}</p>
+                            {log.target_user_id ? (
+                              <p className="break-all text-xs text-slate-600">Target: {log.target_user_id}</p>
+                            ) : null}
+                            {log.entity_type || log.entity_id ? (
+                              <p className="break-all text-xs text-slate-600">
+                                Entity: {[log.entity_type, log.entity_id].filter(Boolean).join(':')}
+                              </p>
+                            ) : null}
+                          </article>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
+                </>
               )}
             </div>
           </section>

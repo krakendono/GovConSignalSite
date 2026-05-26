@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/env'
 import { fetchSamGovOpportunities } from '@/lib/samgov'
+import { fetchContractAwardIntelligence } from '@/lib/contract-awards'
 import { logAuditAction } from '@/lib/audit'
+import { logUsageEvent } from '@/lib/usage-events'
 import { generateOpportunitySummary } from '@/lib/opportunity-summary'
 
 type MatchInput = {
@@ -37,6 +39,17 @@ type OpportunityStatusRow = {
   company_id: string
   opportunity_id: string
   status: 'active' | 'closed'
+}
+
+type OpportunityAwardIntelligenceRow = {
+  opportunity_id: string
+  award_count: number
+  incumbent_vendor: string | null
+  last_award_date: string | null
+  total_award_value: number | null
+  rebid_signal: string
+  summary_text: string
+  source_payload: Record<string, unknown>[]
 }
 
 const HIGH_MATCH_THRESHOLD = 70
@@ -312,12 +325,40 @@ export async function syncOpportunities() {
   }
 
   let opportunities
+  const samPullStartedAt = Date.now()
   try {
     opportunities = await fetchSamGovOpportunities(75)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'SAM.gov sync failed'
+    await logUsageEvent({
+      actorUserId: user.id,
+      companyId: company.id,
+      action: 'sam.api_pull',
+      provider: 'sam.gov',
+      model: null,
+      status: 'error',
+      durationMs: Date.now() - samPullStartedAt,
+      metadata: {
+        requestedLimit: 75,
+        error: message,
+      },
+    })
     redirect(`/opportunities?error=${encodeURIComponent(message)}`)
   }
+
+  await logUsageEvent({
+    actorUserId: user.id,
+    companyId: company.id,
+    action: 'sam.api_pull',
+    provider: 'sam.gov',
+    model: null,
+    status: 'success',
+    durationMs: Date.now() - samPullStartedAt,
+    metadata: {
+      requestedLimit: 75,
+      opportunitiesFetched: opportunities.length,
+    },
+  })
 
   if (opportunities.length === 0) {
     redirect('/opportunities?message=No%20opportunities%20returned%20from%20SAM.gov')
@@ -414,23 +455,31 @@ export async function syncOpportunities() {
     .select('opportunity_id, match_score')
     .eq('company_id', company.id)
 
+  const storedOpportunityIds = (storedRows ?? []).map((row) => row.id)
+  const { data: existingStatusesResult } = storedOpportunityIds.length
+    ? await supabase
+        .from('company_opportunity_statuses')
+        .select('opportunity_id, status')
+        .eq('company_id', company.id)
+        .in('opportunity_id', storedOpportunityIds)
+    : { data: [] as ExistingStatusRow[] }
+
   const existingMatchScoreByOpportunity = new Map(
     ((existingMatchesResult ?? []) as ExistingMatchRow[]).map((row) => [row.opportunity_id, Number(row.match_score)]),
   )
-
-  const { data: existingStatusesResult } = await supabase
-    .from('company_opportunity_statuses')
-    .select('opportunity_id, status')
-    .eq('company_id', company.id)
-
   const existingStatusByOpportunity = new Map(
-    ((existingStatusesResult ?? []) as ExistingStatusRow[]).map((row) => [row.opportunity_id, row]),
+    ((existingStatusesResult ?? []) as ExistingStatusRow[]).map((row) => [row.opportunity_id, row.status]),
   )
 
   const autoStatusRows = opportunities
     .map((record) => {
       const stored = byNoticeId.get(record.sourceNoticeId)
       if (!stored) {
+        return null
+      }
+
+      const existingStatus = existingStatusByOpportunity.get(stored.id)
+      if (existingStatus === 'taken') {
         return null
       }
 
@@ -563,6 +612,52 @@ export async function syncOpportunities() {
       if (notificationError) {
         redirect(`/opportunities?error=${encodeURIComponent(notificationError.message)}`)
       }
+    }
+  }
+
+  const awardIntelligenceRows = (
+    await Promise.all(
+      matchRows
+        .sort((left, right) => right.match_score - left.match_score)
+        .slice(0, 10)
+        .map(async (match) => {
+          const stored = storedByOpportunityId.get(match.opportunity_id)
+          if (!stored) {
+            return null
+          }
+
+          const intelligence = await fetchContractAwardIntelligence({
+            title: stored.title,
+            agency: stored.agency,
+            naicsCode: stored.naics_code,
+            pscCode: stored.psc_code,
+          })
+
+          if (!intelligence) {
+            return null
+          }
+
+          return {
+            opportunity_id: stored.id,
+            award_count: intelligence.awardCount,
+            incumbent_vendor: intelligence.incumbentVendor,
+            last_award_date: intelligence.lastAwardDate,
+            total_award_value: intelligence.totalAwardValue,
+            rebid_signal: intelligence.rebidSignal,
+            summary_text: intelligence.summaryText,
+            source_payload: intelligence.sourceRecords.map((record) => record.rawPayload),
+          }
+        }),
+    )
+  ).filter((row): row is OpportunityAwardIntelligenceRow => Boolean(row))
+
+  if (awardIntelligenceRows.length > 0) {
+    const { error: awardError } = await supabase
+      .from('opportunity_award_intelligence')
+      .upsert(awardIntelligenceRows, { onConflict: 'opportunity_id' })
+
+    if (awardError) {
+      redirect(`/opportunities?error=${encodeURIComponent(awardError.message)}`)
     }
   }
 

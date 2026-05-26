@@ -68,6 +68,16 @@ type OpportunityStatusRow = {
   updated_at: string
 }
 
+type OpportunityAwardIntelligenceRow = {
+  opportunity_id: string
+  award_count: number
+  incumbent_vendor: string | null
+  last_award_date: string | null
+  total_award_value: number | null
+  rebid_signal: string | null
+  summary_text: string | null
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return 'N/A'
@@ -98,6 +108,18 @@ function formatPipelineStatus(statusRow: OpportunityStatusRow | undefined) {
     label,
     tone,
   }
+}
+
+function formatCurrency(value: number | null) {
+  if (value === null) {
+    return 'N/A'
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value)
 }
 
 function toDetailedBreakdown(reasons: string[], matchScore: number) {
@@ -262,6 +284,20 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
 
   const statusByOpportunityId = new Map(currentStatuses.map((status) => [status.opportunity_id, status]))
 
+  let awardIntelligence: OpportunityAwardIntelligenceRow[] = []
+  if (allOpportunityIds.length > 0) {
+    const { data: awardResult } = await supabase
+      .from('opportunity_award_intelligence')
+      .select('opportunity_id, award_count, incumbent_vendor, last_award_date, total_award_value, rebid_signal, summary_text')
+      .in('opportunity_id', allOpportunityIds)
+
+    awardIntelligence = (awardResult ?? []) as OpportunityAwardIntelligenceRow[]
+  }
+
+  const awardIntelligenceByOpportunityId = new Map(
+    awardIntelligence.map((intelligence) => [intelligence.opportunity_id, intelligence]),
+  )
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f8f5,#eef2ff)] px-6 py-16">
       <section className="mx-auto max-w-6xl">
@@ -298,6 +334,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                 const opportunity = row.opportunities
                 const summary = summaryByOpportunityId.get(opportunity.id)
                 const pipelineStatus = formatPipelineStatus(statusByOpportunityId.get(opportunity.id))
+                const awardHistory = awardIntelligenceByOpportunityId.get(opportunity.id)
                 const breakdown = toDetailedBreakdown(row.match_reason, row.match_score)
 
                 return (
@@ -327,6 +364,34 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       <p className="mt-3 text-xs text-slate-600">Key points: {summary.key_points.join(' | ')}</p>
                     ) : null}
 
+                    {awardHistory ? (
+                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                        <p className="font-semibold uppercase tracking-wide">Historical intelligence</p>
+                        <p className="mt-1">{awardHistory.summary_text ?? 'Historical award context not available.'}</p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          <p>Awards found: {awardHistory.award_count}</p>
+                          <p>Incumbent: {awardHistory.incumbent_vendor ?? 'N/A'}</p>
+                          <p>Last award: {formatDate(awardHistory.last_award_date)}</p>
+                          <p>Total value: {formatCurrency(awardHistory.total_award_value)}</p>
+                          <p className="sm:col-span-2 lg:col-span-3">Rebid signal: {awardHistory.rebid_signal ?? 'N/A'}</p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {awardHistory ? (
+                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                        <p className="font-semibold uppercase tracking-wide">Historical intelligence</p>
+                        <p className="mt-1">{awardHistory.summary_text ?? 'Historical award context not available.'}</p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          <p>Awards found: {awardHistory.award_count}</p>
+                          <p>Incumbent: {awardHistory.incumbent_vendor ?? 'N/A'}</p>
+                          <p>Last award: {formatDate(awardHistory.last_award_date)}</p>
+                          <p>Total value: {formatCurrency(awardHistory.total_award_value)}</p>
+                          <p className="sm:col-span-2 lg:col-span-3">Rebid signal: {awardHistory.rebid_signal ?? 'N/A'}</p>
+                        </div>
+                      </div>
+                    ) : null}
+
                     {breakdown.length > 0 ? (
                       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Score breakdown</p>
@@ -339,6 +404,9 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                     ) : null}
 
                     <div className="mt-4 flex flex-wrap gap-2">
+                      <Link href={`/proposal-prep/${opportunity.id}`} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100">
+                        Proposal workspace
+                      </Link>
                       <form action={setOpportunityStatus}>
                         <input type="hidden" name="opportunityId" value={opportunity.id} />
                         <input type="hidden" name="status" value="active" />
@@ -382,6 +450,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                 const match = matchByOpportunityId.get(opportunity.id)
                 const summary = summaryByOpportunityId.get(opportunity.id)
                 const pipelineStatus = formatPipelineStatus(statusByOpportunityId.get(opportunity.id))
+                const awardHistory = awardIntelligenceByOpportunityId.get(opportunity.id)
                 const breakdown = match ? toDetailedBreakdown(match.reasons, match.matchScore) : []
 
                 return (
@@ -413,6 +482,20 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       <p className="mt-3 text-xs text-slate-600">Key points: {summary.key_points.join(' | ')}</p>
                     ) : null}
 
+                    {awardHistory ? (
+                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                        <p className="font-semibold uppercase tracking-wide">Historical intelligence</p>
+                        <p className="mt-1">{awardHistory.summary_text ?? 'Historical award context not available.'}</p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          <p>Awards found: {awardHistory.award_count}</p>
+                          <p>Incumbent: {awardHistory.incumbent_vendor ?? 'N/A'}</p>
+                          <p>Last award: {formatDate(awardHistory.last_award_date)}</p>
+                          <p>Total value: {formatCurrency(awardHistory.total_award_value)}</p>
+                          <p className="sm:col-span-2 lg:col-span-3">Rebid signal: {awardHistory.rebid_signal ?? 'N/A'}</p>
+                        </div>
+                      </div>
+                    ) : null}
+
                     {match ? (
                       <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Score breakdown</p>
@@ -433,6 +516,9 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                     ) : null}
 
                     <div className="mt-4 flex flex-wrap gap-2">
+                      <Link href={`/proposal-prep/${opportunity.id}`} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100">
+                        Proposal prep
+                      </Link>
                       <form action={setOpportunityStatus}>
                         <input type="hidden" name="opportunityId" value={opportunity.id} />
                         <input type="hidden" name="status" value="active" />

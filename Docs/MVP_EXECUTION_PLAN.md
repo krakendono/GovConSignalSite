@@ -51,20 +51,25 @@ When uncertain or scope expands unexpectedly, return to the current MVP phase an
 
 ## Delivered So Far
 
-- Step 3: Supabase foundation with server/client helpers and env scaffolding.
-- Step 4: Auth scaffold (password + magic-link + local development fallback flows, callback, protected dashboard).
-- Step 5: Database schema migration for users, companies, company_profiles, NAICS/PSC tables, and RLS policies.
-- Step 6: Company profile intake page with save action and NAICS/PSC mapping persistence.
-- Step 7: Watchlists tables, create/edit/delete flow, and validation.
-- Step 8: SAM.gov opportunities sync endpoint integration.
-- Step 9: Opportunity storage and company/watchlist match persistence.
-- Step 10: Dashboard navigation and opportunity review UX refinements.
-- Step 11: Opportunity summaries persisted and displayed.
-- Step 12: Expanded scoring logic (NAICS + PSC + keywords + preferred agencies + exclusions).
-- Step 13: Notification pipeline for new/high-value matches with in-app inbox.
-- Step 18 (partial): Admin management, audit visibility, searchable/collapsible user views.
 
 ## Next Build Slice
 
-- Step 14: Historical intelligence via Contract Awards API (incumbents, spend patterns, rebid indicators).
-- Step 15: Proposal generation foundation.
+## Step 14 Progress
+
+- Historical awards intelligence table, fetch helper, and opportunity-page display are implemented.
+- Sync now stores awards-history summaries for the highest-priority matches when Contract Awards API settings are available.
+
+## Step 15 Progress
+
+- Proposal preparation foundation is implemented with a server-rendered brief page for each opportunity.
+- The new brief uses verified company profile data, opportunity metadata, and stored historical intelligence only.
+- AI-assisted research now extracts contact emails and likely supporting documents from the raw SAM payload when available, with a safe fallback when no model is configured.
+
+## Step 16 Progress
+
+- Proposal workspace now supports editable draft sections, AI-generated pre-drafting questions, and DOCX/PDF exports.
+- The active pipeline view includes a direct link into the proposal workspace for each active opportunity.
+
+## Next Build Slice
+
+- Step 17: Stripe.
