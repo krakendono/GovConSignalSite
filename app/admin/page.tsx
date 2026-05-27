@@ -111,8 +111,8 @@ type CompanyOpportunityStatusRow = {
   company_id: string
   opportunity_id: string
   status: 'active' | 'closed' | 'taken'
-  status_source: 'manual' | 'sync'
-  status_reason: string | null
+  status_source?: 'manual' | 'sync' | null
+  status_reason?: string | null
   updated_at: string
   opportunities: JoinedOpportunity | JoinedOpportunity[]
 }
@@ -283,7 +283,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         'id, actor_user_id, company_id, opportunity_id, action, provider, model, status, duration_ms, input_tokens, output_tokens, total_tokens, estimated_cost_usd, metadata, created_at',
       )
       .order('created_at', { ascending: false })
-      .limit(3000),
+      .limit(800),
     adminClient
       .from('watchlists')
       .select('id, company_id, name, is_active, created_at')
@@ -307,15 +307,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       .limit(500),
     adminClient
       .from('company_opportunity_statuses')
-      .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+      .select('company_id, opportunity_id, status, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
       .order('updated_at', { ascending: false })
       .limit(1000),
     adminClient
       .from('company_opportunity_statuses')
-      .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+      .select('company_id, opportunity_id, status, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
       .eq('status', 'taken')
       .order('updated_at', { ascending: false })
-      .limit(5000),
+      .limit(1000),
   ])
 
   const users = (usersResult.data ?? []) as PublicUser[]
@@ -339,17 +339,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     const [scopedStatusesResult, scopedTakenStatusesResult] = await Promise.all([
       adminClient
         .from('company_opportunity_statuses')
-        .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+        .select('company_id, opportunity_id, status, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
         .in('company_id', companyIds)
         .order('updated_at', { ascending: false })
-        .limit(10000),
+        .limit(3000),
       adminClient
         .from('company_opportunity_statuses')
-        .select('company_id, opportunity_id, status, status_source, status_reason, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
+        .select('company_id, opportunity_id, status, updated_at, opportunities!inner(id, title, source_notice_id, agency)')
         .in('company_id', companyIds)
         .eq('status', 'taken')
         .order('updated_at', { ascending: false })
-        .limit(10000),
+        .limit(3000),
     ])
 
     if (scopedStatusesResult.data) {
@@ -926,7 +926,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 <div className="mt-2 space-y-1 text-xs text-slate-600">
                                   <p>Notice ID: {taken.opportunities.source_notice_id}</p>
                                   <p>Agency: {taken.opportunities.agency ?? 'N/A'}</p>
-                                  <p>Placement source: {taken.status_source}</p>
+                                  <p>Placement source: {taken.status_source ?? 'manual'}</p>
                                   <p>Updated: {formatDate(taken.updated_at)}</p>
                                   {taken.status_reason ? <p>Reason: {taken.status_reason}</p> : null}
                                 </div>
@@ -956,7 +956,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 <div className="mt-2 space-y-1 text-xs text-slate-600">
                                   <p>Notice ID: {contractStatus.opportunities.source_notice_id}</p>
                                   <p>Agency: {contractStatus.opportunities.agency ?? 'N/A'}</p>
-                                  <p>Placement source: {contractStatus.status_source}</p>
+                                  <p>Placement source: {contractStatus.status_source ?? 'manual'}</p>
                                   <p>Updated: {formatDate(contractStatus.updated_at)}</p>
                                   {contractStatus.status_reason ? <p>Reason: {contractStatus.status_reason}</p> : null}
                                 </div>

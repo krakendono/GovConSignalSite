@@ -24,6 +24,8 @@ type ContractAwardIntelligence = {
   sourceRecords: ContractAwardRecord[]
 }
 
+const CONTRACT_AWARDS_TIMEOUT_MS = 10000
+
 function toStringOrNull(value: unknown) {
   if (typeof value !== 'string') {
     return null
@@ -183,25 +185,34 @@ export async function fetchContractAwardIntelligence(input: ContractAwardsSearch
     url.searchParams.set('pscCode', input.pscCode)
   }
 
-  const response = await fetch(url, { cache: 'no-store' })
-  if (!response.ok) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), CONTRACT_AWARDS_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, { cache: 'no-store', signal: controller.signal })
+    if (!response.ok) {
+      return null
+    }
+
+    const payload = (await response.json()) as Record<string, unknown>
+    const candidates =
+      (Array.isArray(payload.awardsData) ? payload.awardsData : null) ??
+      (Array.isArray(payload.awards) ? payload.awards : null) ??
+      (Array.isArray(payload.results) ? payload.results : null) ??
+      (Array.isArray(payload.data) ? payload.data : null) ??
+      []
+
+    const records = candidates
+      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'))
+      .map((item) => normalizeRecord(item))
+      .filter((item): item is ContractAwardRecord => Boolean(item))
+
+    return summarizeIntelligence(records)
+  } catch {
     return null
+  } finally {
+    clearTimeout(timeout)
   }
-
-  const payload = (await response.json()) as Record<string, unknown>
-  const candidates =
-    (Array.isArray(payload.awardsData) ? payload.awardsData : null) ??
-    (Array.isArray(payload.awards) ? payload.awards : null) ??
-    (Array.isArray(payload.results) ? payload.results : null) ??
-    (Array.isArray(payload.data) ? payload.data : null) ??
-    []
-
-  const records = candidates
-    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'))
-    .map((item) => normalizeRecord(item))
-    .filter((item): item is ContractAwardRecord => Boolean(item))
-
-  return summarizeIntelligence(records)
 }
 
 export type { ContractAwardIntelligence }

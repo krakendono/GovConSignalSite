@@ -236,14 +236,24 @@ export async function loadProposalWorkspaceData(supabase: SupabaseClient, userId
       : null,
   })
 
-  const questions = await generateProposalQuestions({
-    opportunityTitle: opportunity.title,
-    agency: opportunity.agency,
-    synopsis: opportunity.synopsis,
-    summaryText: summary?.summary_text ?? null,
-    rawPayload: (opportunity.raw_payload as Record<string, unknown> | null) ?? null,
-    research,
-  })
+  const storedQuestions = ((draft?.question_answers as Array<{ question: string; answer: string }> | null) ?? [])
+    .map((item) => item.question?.trim())
+    .filter((item): item is string => Boolean(item))
+
+  const effectiveQuestions: ProposalQuestion[] =
+    storedQuestions.length > 0
+      ? storedQuestions.map((question) => ({
+          question,
+          rationale: 'Restored from the saved draft for continuity.',
+        }))
+      : await generateProposalQuestions({
+          opportunityTitle: opportunity.title,
+          agency: opportunity.agency,
+          synopsis: opportunity.synopsis,
+          summaryText: summary?.summary_text ?? null,
+          rawPayload: (opportunity.raw_payload as Record<string, unknown> | null) ?? null,
+          research,
+        })
 
   await logUsageEvent({
     actorUserId: userId,
@@ -256,7 +266,7 @@ export async function loadProposalWorkspaceData(supabase: SupabaseClient, userId
     durationMs: Date.now() - aiWorkspaceStartedAt,
     metadata: {
       aiConfigured: aiConfig.configured,
-      questionCount: questions.length,
+      questionCount: effectiveQuestions.length,
       contactCount: research.contacts.length,
       attachmentCount: research.attachments.length,
       apiSectionCounts: {
@@ -297,7 +307,7 @@ export async function loadProposalWorkspaceData(supabase: SupabaseClient, userId
     },
     brief,
     research,
-    questions,
+    questions: effectiveQuestions,
     contractDocuments:
       (contractDocuments ?? []).map((doc) => ({
         id: doc.id,

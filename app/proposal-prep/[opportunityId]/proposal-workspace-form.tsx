@@ -33,6 +33,8 @@ type ProposalWorkspaceFormProps = {
   initialScopeItems: SectionItem[]
   initialApproachItems: SectionItem[]
   initialPastPerformanceClaims: PastPerformanceClaim[]
+  initialCriticalInstructions: string[]
+  initialReadinessBlockers: string[]
   uploadedDocuments: Array<{
     id: string
     fileName: string
@@ -40,6 +42,17 @@ type ProposalWorkspaceFormProps = {
     uploadedAt: string
     hasExtractedText: boolean
   }>
+}
+
+function extractReferenceIds(values: string[]) {
+  return Array.from(
+    new Set(
+      values
+        .flatMap((value) => value.match(/\b[A-Z0-9]{8,}(?:-[A-Z0-9]+)*\b/g) ?? [])
+        .map((match) => match.trim())
+        .filter((match) => /\d/.test(match) && /[A-Z]/i.test(match)),
+    ),
+  ).slice(0, 8)
 }
 
 const EMPTY_SECTION_ITEM: SectionItem = {
@@ -67,6 +80,8 @@ export default function ProposalWorkspaceForm({
   initialScopeItems,
   initialApproachItems,
   initialPastPerformanceClaims,
+  initialCriticalInstructions,
+  initialReadinessBlockers,
   uploadedDocuments = [],
 }: ProposalWorkspaceFormProps) {
   const formRef = useRef<HTMLFormElement | null>(null)
@@ -92,6 +107,41 @@ export default function ProposalWorkspaceForm({
   const [pastPerformanceClaims, setPastPerformanceClaims] = useState(
     initialPastPerformanceClaims.length > 0 ? initialPastPerformanceClaims : [{ ...EMPTY_PAST_PERFORMANCE_CLAIM }],
   )
+
+  const readinessBlockers = useMemo(() => {
+    const blockers = [...initialReadinessBlockers]
+    const combinedComplianceText = `${complianceChecklist}\n${riskNotes}`.toLowerCase()
+
+    const referenceIds = extractReferenceIds(initialCriticalInstructions)
+    referenceIds.forEach((id) => {
+      if (!combinedComplianceText.includes(id.toLowerCase())) {
+        blockers.push(`Compliance checklist should explicitly include reference ID ${id}.`)
+      }
+    })
+
+    const requiresNoQuoteRestriction = initialCriticalInstructions.some((item) => /\bnot\s+(?:a\s+)?request\s+for\s+quotes?\b|\bnot\s+an?\s+rfq\b/i.test(item))
+    if (requiresNoQuoteRestriction) {
+      const hasNoQuoteLanguage = /\bnot\s+(?:a\s+)?request\s+for\s+quotes?\b|\bnot\s+an?\s+rfq\b/i.test(combinedComplianceText)
+      if (!hasNoQuoteLanguage) {
+        blockers.push('Compliance checklist should state that this notice is not a request for quotes.')
+      }
+    }
+
+    const requiresSubjectLineRule = initialCriticalInstructions.some((item) => /\bsubject\s+line\b/i.test(item))
+    if (requiresSubjectLineRule && !combinedComplianceText.includes('subject line')) {
+      blockers.push('Compliance checklist should include the required subject-line instruction for correspondence.')
+    }
+
+    return Array.from(new Set(blockers))
+  }, [initialReadinessBlockers, complianceChecklist, riskNotes, initialCriticalInstructions])
+
+  const canMarkExportReady = readinessBlockers.length === 0
+
+  useEffect(() => {
+    if (!canMarkExportReady && exportReady) {
+      setExportReady(false)
+    }
+  }, [canMarkExportReady, exportReady])
 
   const hasExistingDraft = useMemo(
     () =>
@@ -427,11 +477,23 @@ export default function ProposalWorkspaceForm({
               name="exportReady"
               checked={exportReady}
               onChange={(event) => setExportReady(event.target.checked)}
+              disabled={!canMarkExportReady}
               className="h-4 w-4 rounded border-slate-300"
             />
             Ready for export
           </label>
         </div>
+
+        {readinessBlockers.length > 0 ? (
+          <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Export is blocked until these items are resolved</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-amber-900">
+              {readinessBlockers.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <div className="mt-4 space-y-4">
           {questions.map((question, index) => (

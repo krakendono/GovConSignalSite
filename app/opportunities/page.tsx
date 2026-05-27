@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { isSupabaseConfigured } from '@/lib/env'
 import { syncOpportunities } from '@/app/opportunities/actions'
 import { setOpportunityStatus } from '@/app/opportunity-status/actions'
+import { SyncButton } from '@/app/opportunities/sync-button'
 
 type OpportunitiesPageProps = {
   searchParams?: Promise<{
@@ -260,39 +261,29 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
   const allOpportunityIds = allOpportunities.map((row) => row.id)
 
   let summaries: OpportunitySummaryRow[] = []
+  let currentStatuses: OpportunityStatusRow[] = []
+  let awardIntelligence: OpportunityAwardIntelligenceRow[] = []
   if (allOpportunityIds.length > 0) {
-    const { data: summariesResult } = await supabase
-      .from('opportunity_summaries')
-      .select('opportunity_id, summary_text, key_points, pursue_steps')
-      .in('opportunity_id', allOpportunityIds)
+    const [summariesResponse, statusesResponse, awardResponse] = await Promise.all([
+      supabase.from('opportunity_summaries').select('opportunity_id, summary_text, key_points, pursue_steps').in('opportunity_id', allOpportunityIds),
+      supabase
+        .from('company_opportunity_statuses')
+        .select('opportunity_id, status, updated_at')
+        .eq('company_id', company.id)
+        .in('opportunity_id', allOpportunityIds),
+      supabase
+        .from('opportunity_award_intelligence')
+        .select('opportunity_id, award_count, incumbent_vendor, last_award_date, total_award_value, rebid_signal, summary_text')
+        .in('opportunity_id', allOpportunityIds),
+    ])
 
-    summaries = (summariesResult ?? []) as OpportunitySummaryRow[]
+    summaries = (summariesResponse.data ?? []) as OpportunitySummaryRow[]
+    currentStatuses = (statusesResponse.data ?? []) as OpportunityStatusRow[]
+    awardIntelligence = (awardResponse.data ?? []) as OpportunityAwardIntelligenceRow[]
   }
 
   const summaryByOpportunityId = new Map(summaries.map((summary) => [summary.opportunity_id, summary]))
-
-  let currentStatuses: OpportunityStatusRow[] = []
-  if (allOpportunityIds.length > 0) {
-    const { data: statusResult } = await supabase
-      .from('company_opportunity_statuses')
-      .select('opportunity_id, status, updated_at')
-      .eq('company_id', company.id)
-      .in('opportunity_id', allOpportunityIds)
-
-    currentStatuses = (statusResult ?? []) as OpportunityStatusRow[]
-  }
-
   const statusByOpportunityId = new Map(currentStatuses.map((status) => [status.opportunity_id, status]))
-
-  let awardIntelligence: OpportunityAwardIntelligenceRow[] = []
-  if (allOpportunityIds.length > 0) {
-    const { data: awardResult } = await supabase
-      .from('opportunity_award_intelligence')
-      .select('opportunity_id, award_count, incumbent_vendor, last_award_date, total_award_value, rebid_signal, summary_text')
-      .in('opportunity_id', allOpportunityIds)
-
-    awardIntelligence = (awardResult ?? []) as OpportunityAwardIntelligenceRow[]
-  }
 
   const awardIntelligenceByOpportunityId = new Map(
     awardIntelligence.map((intelligence) => [intelligence.opportunity_id, intelligence]),
@@ -314,9 +305,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
 
         <div className="mt-6 flex flex-wrap gap-3">
           <form action={syncOpportunities}>
-            <button type="submit" className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-              Sync opportunities from SAM.gov
-            </button>
+            <SyncButton />
           </form>
           <Link href="/active-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Active opportunities</Link>
           <Link href="/closed-opportunities" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">Closed opportunities</Link>

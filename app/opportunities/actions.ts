@@ -53,6 +53,30 @@ type OpportunityAwardIntelligenceRow = {
 }
 
 const HIGH_MATCH_THRESHOLD = 70
+const AWARD_INTELLIGENCE_CONCURRENCY = 2
+const DEFAULT_SAM_SYNC_LIMIT = 1000
+const SAM_SYNC_COOLDOWN_MS = 60000
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+) {
+  const safeConcurrency = Math.max(1, Math.min(concurrency, items.length || 1))
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  const worker = async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex
+      nextIndex += 1
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex)
+    }
+  }
+
+  await Promise.all(Array.from({ length: safeConcurrency }, () => worker()))
+  return results
+}
 
 function toLowerUnique(values: string[]) {
   return Array.from(new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean)))
@@ -274,6 +298,33 @@ export async function syncOpportunities() {
     redirect('/company-profile?error=Create%20your%20company%20profile%20first')
   }
 
+  const { data: recentSamErrors } = await supabase
+    .from('usage_events')
+    .select('created_at, metadata')
+    .eq('company_id', company.id)
+    .eq('action', 'sam.api_pull')
+    .eq('status', 'error')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  const latestSamError = recentSamErrors?.[0]
+  if (latestSamError?.created_at) {
+    const createdAt = new Date(latestSamError.created_at)
+    const message =
+      latestSamError.metadata && typeof latestSamError.metadata === 'object'
+        ? String((latestSamError.metadata as Record<string, unknown>).error ?? '')
+        : ''
+
+    const isRateLimitError = /rate\s*limit|429/i.test(message)
+    if (!Number.isNaN(createdAt.getTime()) && isRateLimitError) {
+      const elapsedMs = Date.now() - createdAt.getTime()
+      if (elapsedMs < SAM_SYNC_COOLDOWN_MS) {
+        const remainingSeconds = Math.max(1, Math.ceil((SAM_SYNC_COOLDOWN_MS - elapsedMs) / 1000))
+        redirect(`/opportunities?error=${encodeURIComponent(`SAM.gov is rate limited. Wait ${remainingSeconds}s and retry sync.`)}`)
+      }
+    }
+  }
+
   const [
     companyProfileResult,
     companyNaicsResult,
@@ -324,10 +375,35 @@ export async function syncOpportunities() {
     excludedTerms: Array.from(new Set([...safeStringArray(companyProfile?.excluded_industries), ...watchlistExclusions])),
   }
 
+  const configuredLimit = Number(process.env.SAM_GOV_SYNC_LIMIT)
+  const requestedLimit = Number.isFinite(configuredLimit)
+    ? Math.max(1, Math.min(1000, Math.floor(configuredLimit)))
+    : DEFAULT_SAM_SYNC_LIMIT
+
+  const { data: latestStoredOpportunity } = await supabase
+    .from('opportunities')
+    .select('posted_at')
+    .not('posted_at', 'is', null)
+    .order('posted_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  let incrementalPostedFromIso: string | null = null
+  if (latestStoredOpportunity?.posted_at) {
+    const latestPosted = new Date(latestStoredOpportunity.posted_at)
+    if (!Number.isNaN(latestPosted.getTime())) {
+      // Include a small overlap so we do not miss late-arriving notices near boundary timestamps.
+      latestPosted.setDate(latestPosted.getDate() - 2)
+      incrementalPostedFromIso = latestPosted.toISOString()
+    }
+  }
+
   let opportunities
   const samPullStartedAt = Date.now()
   try {
-    opportunities = await fetchSamGovOpportunities(75)
+    opportunities = await fetchSamGovOpportunities(requestedLimit, {
+      postedFromIso: incrementalPostedFromIso,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'SAM.gov sync failed'
     await logUsageEvent({
@@ -339,7 +415,8 @@ export async function syncOpportunities() {
       status: 'error',
       durationMs: Date.now() - samPullStartedAt,
       metadata: {
-        requestedLimit: 75,
+        requestedLimit,
+        incrementalPostedFromIso,
         error: message,
       },
     })
@@ -355,7 +432,8 @@ export async function syncOpportunities() {
     status: 'success',
     durationMs: Date.now() - samPullStartedAt,
     metadata: {
-      requestedLimit: 75,
+      requestedLimit,
+      incrementalPostedFromIso,
       opportunitiesFetched: opportunities.length,
     },
   })
@@ -615,40 +693,37 @@ export async function syncOpportunities() {
     }
   }
 
+  const topMatches = matchRows.sort((left, right) => right.match_score - left.match_score).slice(0, 10)
+
   const awardIntelligenceRows = (
-    await Promise.all(
-      matchRows
-        .sort((left, right) => right.match_score - left.match_score)
-        .slice(0, 10)
-        .map(async (match) => {
-          const stored = storedByOpportunityId.get(match.opportunity_id)
-          if (!stored) {
-            return null
-          }
+    await mapWithConcurrency(topMatches, AWARD_INTELLIGENCE_CONCURRENCY, async (match) => {
+      const stored = storedByOpportunityId.get(match.opportunity_id)
+      if (!stored) {
+        return null
+      }
 
-          const intelligence = await fetchContractAwardIntelligence({
-            title: stored.title,
-            agency: stored.agency,
-            naicsCode: stored.naics_code,
-            pscCode: stored.psc_code,
-          })
+      const intelligence = await fetchContractAwardIntelligence({
+        title: stored.title,
+        agency: stored.agency,
+        naicsCode: stored.naics_code,
+        pscCode: stored.psc_code,
+      })
 
-          if (!intelligence) {
-            return null
-          }
+      if (!intelligence) {
+        return null
+      }
 
-          return {
-            opportunity_id: stored.id,
-            award_count: intelligence.awardCount,
-            incumbent_vendor: intelligence.incumbentVendor,
-            last_award_date: intelligence.lastAwardDate,
-            total_award_value: intelligence.totalAwardValue,
-            rebid_signal: intelligence.rebidSignal,
-            summary_text: intelligence.summaryText,
-            source_payload: intelligence.sourceRecords.map((record) => record.rawPayload),
-          }
-        }),
-    )
+      return {
+        opportunity_id: stored.id,
+        award_count: intelligence.awardCount,
+        incumbent_vendor: intelligence.incumbentVendor,
+        last_award_date: intelligence.lastAwardDate,
+        total_award_value: intelligence.totalAwardValue,
+        rebid_signal: intelligence.rebidSignal,
+        summary_text: intelligence.summaryText,
+        source_payload: intelligence.sourceRecords.map((record) => record.rawPayload),
+      }
+    })
   ).filter((row): row is OpportunityAwardIntelligenceRow => Boolean(row))
 
   if (awardIntelligenceRows.length > 0) {

@@ -42,6 +42,17 @@ function formatCurrency(value: number | null) {
   }).format(value)
 }
 
+function buildInitialReadinessBlockers(workspace: NonNullable<WorkspaceData>) {
+  return [
+    workspace.research.contactEmails.length === 0 ? 'No verified contact email was extracted from the notice payload.' : null,
+    workspace.research.attachments.length === 0 ? 'No attachments or linked files were extracted from the notice payload.' : null,
+    !workspace.opportunity.response_deadline_at ? 'Response deadline is missing in the current opportunity record.' : null,
+    workspace.research.apiSections.criticalInstructions.length === 0
+      ? 'No critical solicitation instructions were extracted. Verify subject-line and quote restrictions in the SAM notice manually.'
+      : null,
+  ].filter((item): item is string => Boolean(item))
+}
+
 function buildAutoAnswer(question: string, workspace: NonNullable<WorkspaceData>) {
   const normalizedQuestion = question.toLowerCase()
 
@@ -83,6 +94,9 @@ function buildAutoAnswer(question: string, workspace: NonNullable<WorkspaceData>
     }
     if (workspace.research.missingDocumentSignals.length > 0) {
       lines.push(`Missing document signals: ${workspace.research.missingDocumentSignals.join(' | ')}.`)
+    }
+    if (workspace.research.apiSections.criticalInstructions.length > 0) {
+      lines.push(`Critical instructions: ${workspace.research.apiSections.criticalInstructions.slice(0, 3).join(' | ')}.`)
     }
     return lines.length > 0 ? lines.join(' ') : 'No attachment or uploaded-document records are available yet.'
   }
@@ -171,6 +185,7 @@ export default async function ProposalPrepPage({ params, searchParams }: Proposa
 
     return buildAutoAnswer(question.question, workspace)
   })
+  const initialReadinessBlockers = buildInitialReadinessBlockers(workspace)
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fef3c7,transparent_30%),linear-gradient(180deg,#f7f8f5,#eef2ff)] px-6 py-16">
@@ -209,6 +224,8 @@ export default async function ProposalPrepPage({ params, searchParams }: Proposa
             initialScopeItems={workspace.draft?.proposal_sections.scope ?? []}
             initialApproachItems={workspace.draft?.proposal_sections.approach ?? []}
             initialPastPerformanceClaims={workspace.draft?.proposal_sections.pastPerformanceClaims ?? []}
+            initialCriticalInstructions={workspace.research.apiSections.criticalInstructions}
+            initialReadinessBlockers={initialReadinessBlockers}
             uploadedDocuments={workspace.contractDocuments.map((item) => ({
               id: item.id,
               fileName: item.file_name,
@@ -242,6 +259,7 @@ export default async function ProposalPrepPage({ params, searchParams }: Proposa
                   <ApiSectionList title="Solicitation details" items={workspace.research.apiSections.solicitationDetails} />
                   <ApiSectionList title="Classification" items={workspace.research.apiSections.classification} />
                   <ApiSectionList title="Description" items={workspace.research.apiSections.description} />
+                  <ApiSectionList title="Critical instructions" items={workspace.research.apiSections.criticalInstructions} />
                   <ApiSectionList title="Contact information" items={workspace.research.apiSections.contactInformation} />
                   <ApiSectionList title="Attachments and links" items={workspace.research.apiSections.attachmentsLinks} />
                 </div>
@@ -326,15 +344,33 @@ export default async function ProposalPrepPage({ params, searchParams }: Proposa
 }
 
 function ApiSectionList({ title, items }: { title: string; items: string[] }) {
+  const previewCount = 10
+  const previewItems = items.slice(0, previewCount)
+  const remainingItems = items.slice(previewCount)
+
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">{title}</p>
       {items.length > 0 ? (
-        <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-sky-900">
-          {items.slice(0, 6).map((item) => (
-            <li key={`${title}-${item}`}>{item}</li>
-          ))}
-        </ul>
+        <>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-sky-900">
+            {previewItems.map((item) => (
+              <li key={`${title}-${item}`}>{item}</li>
+            ))}
+          </ul>
+          {remainingItems.length > 0 ? (
+            <details className="mt-2 rounded-md border border-sky-200 bg-sky-100/40 px-2 py-1">
+              <summary className="cursor-pointer text-xs font-medium text-sky-900">
+                Show {remainingItems.length} more
+              </summary>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-sky-900">
+                {remainingItems.map((item) => (
+                  <li key={`${title}-extra-${item}`}>{item}</li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+        </>
       ) : (
         <p className="mt-1 text-xs text-sky-800">No values extracted from current API payload.</p>
       )}

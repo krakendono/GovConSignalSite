@@ -32,6 +32,7 @@ export type OpportunityResearchResult = {
     description: string[]
     contactInformation: string[]
     attachmentsLinks: string[]
+    criticalInstructions: string[]
   }
 }
 
@@ -177,7 +178,144 @@ function normalizeSnippet(value: string) {
   return value.replace(/\s+/g, ' ').trim()
 }
 
-function extractApiSections(rawPayload: RawPayload | null, metadata: OpportunityResearchMetadata) {
+function extractLongestNarrativeText(value: unknown): string | null {
+  const candidates: string[] = []
+
+  const visit = (node: unknown) => {
+    if (!node) {
+      return
+    }
+
+    if (typeof node === 'string') {
+      const text = normalizeSnippet(node)
+      if (text.length >= 80 && !isLikelyUrl(text)) {
+        candidates.push(text)
+      }
+      return
+    }
+
+    if (Array.isArray(node)) {
+      node.forEach((item) => visit(item))
+      return
+    }
+
+    if (typeof node === 'object') {
+      Object.values(node as Record<string, unknown>).forEach((item) => visit(item))
+    }
+  }
+
+  visit(value)
+  const longest = candidates.sort((left, right) => right.length - left.length)[0] ?? null
+  return longest ? longest.slice(0, 12000) : null
+}
+
+async function resolveNoticeDescriptionText(rawPayload: RawPayload | null): Promise<string | null> {
+  if (!rawPayload) {
+    return null
+  }
+
+  const existingText = cleanText(rawPayload.noticeDescriptionText)
+  if (existingText && !isLikelyUrl(existingText)) {
+    return existingText
+  }
+
+  const descriptionUrlCandidates = [
+    cleanText(rawPayload.description),
+    cleanText(rawPayload.noticeDescriptionUrl),
+    cleanText(rawPayload.noticeDescUrl),
+  ].filter((value): value is string => Boolean(value && isLikelyUrl(value)))
+
+  const descriptionUrl = descriptionUrlCandidates[0]
+  if (!descriptionUrl || !descriptionUrl.toLowerCase().includes('noticedesc')) {
+    return null
+  }
+
+  try {
+    const apiKey = process.env.SAM_GOV_API_KEY
+    const url = new URL(descriptionUrl)
+    if (apiKey && !url.searchParams.get('api_key')) {
+      url.searchParams.set('api_key', apiKey)
+    }
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
+    const response = await fetch(url, { cache: 'no-store', signal: controller.signal }).finally(() => clearTimeout(timeout))
+    if (!response.ok) {
+      return null
+    }
+
+    const payload = (await response.json()) as unknown
+    if (!payload || typeof payload !== 'object') {
+      return null
+    }
+
+    const objectPayload = payload as Record<string, unknown>
+    const directCandidates = [
+      cleanText(objectPayload.description),
+      cleanText(objectPayload.synopsis),
+      cleanText(objectPayload.noticeDescription),
+      cleanText(objectPayload.noticeText),
+      cleanText(objectPayload.content),
+    ].filter((value): value is string => Boolean(value && !isLikelyUrl(value)))
+
+    if (directCandidates.length > 0) {
+      return directCandidates.sort((left, right) => right.length - left.length)[0]
+    }
+
+    return extractLongestNarrativeText(objectPayload)
+  } catch {
+    return null
+  }
+}
+
+async function enrichResearchInput(input: ResearchInput): Promise<ResearchInput> {
+  if (!input.rawPayload) {
+    return input
+  }
+
+  const synopsisLooksMissing = !input.synopsis || isLikelyUrl(input.synopsis) || input.synopsis.trim().length < 120
+  if (!synopsisLooksMissing) {
+    return input
+  }
+
+  const resolvedDescription = await resolveNoticeDescriptionText(input.rawPayload)
+  if (!resolvedDescription) {
+    return input
+  }
+
+  return {
+    ...input,
+    synopsis: synopsisLooksMissing ? resolvedDescription : input.synopsis,
+    rawPayload: {
+      ...input.rawPayload,
+      noticeDescriptionText: resolvedDescription,
+    },
+  }
+}
+
+function extractCriticalInstructions(values: string[]) {
+  const snippets = dedupeNonEmpty(values)
+    .flatMap((item) => item.split(/\r?\n|(?<=[.!?])\s+/g))
+    .map((item) => normalizeSnippet(item))
+    .filter((item) => item.length >= 18 && item.length <= 280)
+
+  const patterns = [
+    /\bnot\s+(?:a\s+)?request\s+for\s+quotes?\b/i,
+    /\bnot\s+an?\s+rfq\b/i,
+    /\bquotes?.*\bnot\b.*\b(?:accepted|reviewed)\b/i,
+    /\bcapability\s+statement(?:s)?\b/i,
+    /\bsubject\s+line\b/i,
+    /\b(?:all\s+)?correspondence\b/i,
+    /\b(?:sow|pws|statement of work|performance work statement)\b/i,
+    /\b(?:reference|include)\s+(?:id|solicitation|notice)\b/i,
+  ]
+
+  return dedupeNonEmpty(
+    snippets.filter((snippet) => patterns.some((pattern) => pattern.test(snippet))),
+  ).slice(0, 20)
+}
+
+function extractApiSections(rawPayload: RawPayload | null, metadata: OpportunityResearchMetadata, synopsis?: string | null, summaryText?: string | null) {
   const solicitationDetails: string[] = []
   const classification: string[] = []
   const description: string[] = []
@@ -188,9 +326,15 @@ function extractApiSections(rawPayload: RawPayload | null, metadata: Opportunity
     visitNodes(rawPayload, (node) => {
       Object.entries(node).forEach(([key, value]) => {
         const normalizedKey = key.toLowerCase()
-        const pushValue = (target: string[], label: string, inputValue: unknown) => {
+        const pushValue = (target: string[], label: string, inputValue: unknown, options?: { allowUrl?: boolean }) => {
+          const allowUrl = options?.allowUrl ?? true
           if (typeof inputValue === 'string' && inputValue.trim().length > 0) {
-            target.push(`${label}: ${normalizeSnippet(inputValue).slice(0, 260)}`)
+            const normalizedValue = normalizeSnippet(inputValue)
+            if (!allowUrl && isLikelyUrl(normalizedValue)) {
+              return
+            }
+
+            target.push(`${label}: ${normalizedValue.slice(0, 2000)}`)
           }
         }
 
@@ -203,7 +347,7 @@ function extractApiSections(rawPayload: RawPayload | null, metadata: Opportunity
         }
 
         if (/description|synopsis|scope|requirements|statementofwork|pws|sow|performance/i.test(normalizedKey)) {
-          pushValue(description, key, value)
+          pushValue(description, key, value, { allowUrl: false })
         }
 
         if (/contact|email|phone|officer|pointofcontact|telephone/i.test(normalizedKey)) {
@@ -215,6 +359,11 @@ function extractApiSections(rawPayload: RawPayload | null, metadata: Opportunity
         }
       })
     })
+
+    const noticeDescriptionText = cleanText(rawPayload.noticeDescriptionText)
+    if (noticeDescriptionText && !isLikelyUrl(noticeDescriptionText)) {
+      description.push(`noticeDescriptionText: ${normalizeSnippet(noticeDescriptionText).slice(0, 2000)}`)
+    }
   }
 
   metadata.contacts.forEach((contact) => {
@@ -231,17 +380,25 @@ function extractApiSections(rawPayload: RawPayload | null, metadata: Opportunity
     attachmentsLinks.push(`${label}${type}${link}`)
   })
 
+  const criticalInstructions = extractCriticalInstructions([
+    synopsis ?? '',
+    summaryText ?? '',
+    ...description,
+    ...solicitationDetails,
+  ])
+
   return {
-    solicitationDetails: dedupeNonEmpty(solicitationDetails).slice(0, 20),
-    classification: dedupeNonEmpty(classification).slice(0, 20),
-    description: dedupeNonEmpty(description).slice(0, 20),
-    contactInformation: dedupeNonEmpty(contactInformation).slice(0, 20),
-    attachmentsLinks: dedupeNonEmpty(attachmentsLinks).slice(0, 30),
+    solicitationDetails: dedupeNonEmpty(solicitationDetails).slice(0, 40),
+    classification: dedupeNonEmpty(classification).slice(0, 40),
+    description: dedupeNonEmpty(description).slice(0, 80),
+    contactInformation: dedupeNonEmpty(contactInformation).slice(0, 40),
+    attachmentsLinks: dedupeNonEmpty(attachmentsLinks).slice(0, 60),
+    criticalInstructions,
   }
 }
 
 function buildFallbackResearch(input: ResearchInput, metadata: OpportunityResearchMetadata): OpportunityResearchResult {
-  const apiSections = extractApiSections(input.rawPayload, metadata)
+  const apiSections = extractApiSections(input.rawPayload, metadata, input.synopsis, input.summaryText)
   const contactEmails = metadata.contacts.map((contact) => contact.email).filter((email): email is string => Boolean(email))
   const recommendedDocuments = metadata.attachments.map((attachment) => attachment.title ?? attachment.url ?? 'Unnamed document')
 
@@ -310,7 +467,7 @@ async function callAiResearch(input: ResearchInput, metadata: OpportunityResearc
                 summaryText: truncate(input.summaryText ?? '', 2000),
                 contacts: metadata.contacts,
                 attachments: metadata.attachments,
-                apiSections: extractApiSections(input.rawPayload, metadata),
+                apiSections: extractApiSections(input.rawPayload, metadata, input.synopsis, input.summaryText),
               },
               null,
               2,
@@ -368,7 +525,7 @@ async function callAiResearch(input: ResearchInput, metadata: OpportunityResearc
               summaryText: truncate(input.summaryText ?? '', 2000),
               contacts: metadata.contacts,
               attachments: metadata.attachments,
-              apiSections: extractApiSections(input.rawPayload, metadata),
+              apiSections: extractApiSections(input.rawPayload, metadata, input.synopsis, input.summaryText),
             },
             null,
             2,
@@ -395,12 +552,13 @@ async function callAiResearch(input: ResearchInput, metadata: OpportunityResearc
 }
 
 export async function generateOpportunityResearch(input: ResearchInput): Promise<OpportunityResearchResult> {
-  const metadata = extractOpportunityResearchMetadata(input.rawPayload)
-  const apiSections = extractApiSections(input.rawPayload, metadata)
-  const aiSummary = await callAiResearch(input, metadata)
+  const enrichedInput = await enrichResearchInput(input)
+  const metadata = extractOpportunityResearchMetadata(enrichedInput.rawPayload)
+  const apiSections = extractApiSections(enrichedInput.rawPayload, metadata, enrichedInput.synopsis, enrichedInput.summaryText)
+  const aiSummary = await callAiResearch(enrichedInput, metadata)
 
   if (!aiSummary) {
-    return buildFallbackResearch(input, metadata)
+    return buildFallbackResearch(enrichedInput, metadata)
   }
 
   const contactEmails = metadata.contacts.map((contact) => contact.email).filter((email): email is string => Boolean(email))
@@ -452,6 +610,13 @@ function fallbackProposalQuestions(input: ProposalQuestionInput): ProposalQuesti
     questions.push({
       question: 'Are there attachments hidden behind the SAM notice page that should be downloaded manually?',
       rationale: 'Some solicitations list separate attachments or amendments outside the raw payload.',
+    })
+  }
+
+  if (input.research.apiSections.criticalInstructions.length > 0) {
+    questions.push({
+      question: 'Which critical solicitation instructions (reference IDs, subject lines, or quote restrictions) were copied into the compliance checklist?',
+      rationale: 'Critical instructions are easy to miss and can disqualify an otherwise strong submission.',
     })
   }
 
@@ -664,7 +829,9 @@ function fallbackProposalDraft(input: ProposalDraftInput): ProposalDraftContent 
     .map((doc) => doc.fileName)
     .join(', ')
   const requirementSignals = collectRequirementSignals(input)
+  const criticalInstructions = input.research.apiSections.criticalInstructions
   const requirementChecklistLines = requirementSignals.slice(0, 8).map((item) => `- ${item.requirement} ${toCitation(item.source)}`)
+  const criticalInstructionLines = criticalInstructions.slice(0, 6).map((item) => `- Critical notice instruction: ${item}`)
   const primarySource = uploadedDocsSummary ? `Uploaded docs (${uploadedDocsSummary})` : 'SAM notice and opportunity data'
   const checklistLines = [
     ...attachments.map((item) => `- Confirm and upload: ${item}`),
@@ -672,6 +839,7 @@ function fallbackProposalDraft(input: ProposalDraftInput): ProposalDraftContent 
     '- Confirm final technical narrative and pricing package alignment',
     `- Send clarifications to: ${contacts}`,
     uploadedDocsSummary ? `- Review uploaded contract docs: ${uploadedDocsSummary}` : null,
+    ...criticalInstructionLines,
     ...requirementChecklistLines,
   ]
     .filter((line): line is string => Boolean(line))
@@ -698,6 +866,7 @@ function fallbackProposalDraft(input: ProposalDraftInput): ProposalDraftContent 
         : 'No major missing-document signals were detected in the current payload.',
       input.companyProfile.capabilityStatement ? null : 'Capability statement is not stored; finalize one before submission.',
       `Verify proposal contact path: ${contacts}.`,
+      criticalInstructions.length > 0 ? `Critical solicitation instructions captured: ${criticalInstructions.slice(0, 4).join(' | ')}.` : null,
       requirementSignals.length === 0 ? `No strong requirement signals were extracted from uploaded docs. Confidence: Low ${toCitation(primarySource)}.` : null,
     ]
       .filter((value): value is string => Boolean(value))
@@ -818,6 +987,7 @@ async function callAiProposalDraft(input: ProposalDraftInput): Promise<ProposalD
       contacts: input.research.contacts,
       attachments: input.research.attachments,
       missingDocumentSignals: input.research.missingDocumentSignals,
+      criticalInstructions: input.research.apiSections.criticalInstructions,
     },
     awardHistorySummary: input.awardHistorySummary,
     questions: input.questions,
