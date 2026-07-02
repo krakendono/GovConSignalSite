@@ -1,8 +1,6 @@
 # GovConSignalSite
 
-Starter web app for surfacing federal contracting opportunities from the GSA public opportunities API:
-
-https://open.gsa.gov/api/get-opportunities-public-api/
+Web app for managing federal contracting opportunities as a CRM-first workflow, with user-owned API usage and selective contract tracking.
 
 This repository is prepared as the baseline for a master-prompt driven build process.
 
@@ -40,21 +38,23 @@ npm run build
 - Root route is configured in the app router.
 - VS Code task created at `.vscode/tasks.json` as `dev: next`.
 - Watchlists are now implemented at `/watchlists`.
+- The current product direction is being revised away from platform-owned bulk sync and toward tracked-contract CRM workflows.
 
 ## Master Prompt Alignment
 
 Development follows [Docs/Master Prompt Government Contracting.txt](Docs/Master%20Prompt%20Government%20Contracting.txt) as source of truth.
 Execution sequencing is tracked in [Docs/MVP_EXECUTION_PLAN.md](Docs/MVP_EXECUTION_PLAN.md).
+The CRM-first product reset is defined in [Docs/CRM_REVAMP_PLAN.md](Docs/CRM_REVAMP_PLAN.md).
 
-Current execution target is MVP Phase 1:
+Current execution target is the CRM-first reset:
 
 - Auth
 - Company profiles
-- NAICS/PSC storage
-- Watchlists
-- Pull opportunities
-- Opportunity dashboard
-- Basic filtering
+- Watchlists and targeting preferences
+- User-provided API key flow
+- Search/import of user-selected contracts
+- Tracked contract dashboard
+- Status, notes, and follow-up workflow
 
 ## Step 1 Progress: Supabase Foundation
 
@@ -137,9 +137,13 @@ Security handling:
 - Audit logs are metadata-only and are sanitized to avoid password or payment-card fields.
 - Admin access is gated by `ADMIN_EMAILS` in environment configuration.
 
+## Current implementation note
+
+The repository still contains earlier opportunity sync, scoring, and proposal-prep features from the pre-pivot direction. Those flows are now candidates for refactor, de-scope, or removal as the CRM-first plan is implemented.
+
 ## Step 7 Progress: Opportunities Ingestion and Matching
 
-SAM.gov opportunities sync and storage are now implemented:
+SAM.gov opportunities sync and storage were implemented in the earlier roadmap and are now being reevaluated under the CRM-first revamp:
 
 - [app/opportunities/page.tsx](app/opportunities/page.tsx)
 - [app/opportunities/actions.ts](app/opportunities/actions.ts)

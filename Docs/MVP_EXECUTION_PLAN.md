@@ -1,6 +1,8 @@
-# GovSignal AI MVP Execution Plan
+# GovSignal CRM-First Execution Plan
 
 This plan is derived from `Docs/Master Prompt Government Contracting.txt` and is treated as implementation source of truth.
+
+Current direction is further refined by `Docs/CRM_REVAMP_PLAN.md`, which takes priority when the earlier master prompt conflicts with the CRM-first pivot.
 
 ## Non-negotiable Rules
 
@@ -13,16 +15,16 @@ This plan is derived from `Docs/Master Prompt Government Contracting.txt` and is
 
 ## Current Build Phase
 
-Phase 1: Foundation+
+Phase 1: CRM-first reset
 
 - Auth
 - Company profiles
-- NAICS/PSC storage
-- Opportunities ingestion and storage
+- Watchlists and targeting preferences
+- User-owned API key flow
+- Tracked contract storage and refresh
 - Dashboard and admin oversight
-- AI summaries
-- Expanded baseline match scoring
-- Notifications for new/high-value matches
+- Contract statuses, notes, and follow-up workflow
+- Minimal manual AI assistance only where justified
 
 ## Build Order Lock
 
@@ -33,17 +35,15 @@ Phase 1: Foundation+
 5. Database schema
 6. Company profile system
 7. Watchlists
-8. SAM.gov opportunities integration
-9. Opportunity storage
-10. Dashboard
-11. AI summaries
-12. Match scoring
-13. Notifications
-14. Historical intelligence
-15. Proposal generation
-16. Exports
-17. Stripe
-18. Admin
+8. User API credential storage
+9. Search/import tracked contract flow
+10. Tracked contract storage
+11. Dashboard and CRM workflow
+12. Notes, reminders, and next actions
+13. Manual refresh for tracked records
+14. Targeted notifications
+15. Optional manual AI helpers
+16. Admin
 
 ## Decision Policy
 
@@ -54,22 +54,6 @@ When uncertain or scope expands unexpectedly, return to the current MVP phase an
 
 ## Next Build Slice
 
-## Step 14 Progress
-
-- Historical awards intelligence table, fetch helper, and opportunity-page display are implemented.
-- Sync now stores awards-history summaries for the highest-priority matches when Contract Awards API settings are available.
-
-## Step 15 Progress
-
-- Proposal preparation foundation is implemented with a server-rendered brief page for each opportunity.
-- The new brief uses verified company profile data, opportunity metadata, and stored historical intelligence only.
-- AI-assisted research now extracts contact emails and likely supporting documents from the raw SAM payload when available, with a safe fallback when no model is configured.
-
-## Step 16 Progress
-
-- Proposal workspace now supports editable draft sections, AI-generated pre-drafting questions, and DOCX/PDF exports.
-- The active pipeline view includes a direct link into the proposal workspace for each active opportunity.
-
 ## Next Build Slice
 
-- Step 17: Stripe.
+- Step 8: user-owned API credentials and replacement of bulk sync with tracked-contract search/import.
