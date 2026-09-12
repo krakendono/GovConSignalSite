@@ -31,8 +31,14 @@ export default async function Page() {
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Link
-          href="/auth/login"
+          href="/contracts"
           className="rounded-full bg-signal px-5 py-2.5 font-medium text-base text-white transition hover:opacity-90"
+        >
+          Browse contracts
+        </Link>
+        <Link
+          href="/auth/login"
+          className="rounded-full border border-ink/20 bg-white px-5 py-2.5 font-medium text-base text-ink transition hover:bg-ink/5"
         >
           Sign in
         </Link>
